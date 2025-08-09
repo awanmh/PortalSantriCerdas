@@ -1,6 +1,5 @@
 # PortalSantriCerdas
 Dashboard digital untuk santri modern.
-# 🚀 Sistem Absensi & Pelacakan Siswa Cerdas
 
 ![Banner Proyek](https://placehold.co/800x300/3498db/ffffff?text=Sistem+Absensi+SMK+Pondok)
 

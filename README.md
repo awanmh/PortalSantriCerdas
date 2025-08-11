@@ -50,6 +50,14 @@ Sistem ini terdiri dari tiga komponen utama yang saling berinteraksi:
 3.  **🖥️ Frontend (React + Tailwind CSS)**
     * **Tugas:** Antarmuka yang dilihat dan digunakan oleh siswa dan guru.
     * **Aksi:** Menampilkan form login, dashboard, status absensi, dan berinteraksi dengan Backend untuk mengambil & mengirim data.
+## ClassDiagram & Flowchart 
+
+### 1. Class Diagram
+<img src="assets/ClassDiagram.png" width="300"/>
+
+### 2. Flowchart
+<img src="assets/Flowchart.png" width="300"/>
+
 
 ---
 

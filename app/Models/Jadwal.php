@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Jadwal extends Model
 {
     use HasFactory;
+
+    protected $table = 'jadwal';
+
     protected $fillable = [
         'judul_event',
         'deskripsi',
@@ -15,20 +18,32 @@ class Jadwal extends Model
         'jam_mulai',
         'jam_selesai',
         'guru_id',
+        'kelas_id',   // ✅ tambahin, biar relasi bisa dipakai
+        'jurusan_id', // ✅ tambahin juga
         'tipe',
-
     ];
-    //
+
+    /**
+     * Relasi ke guru (User)
+     */
     public function guru()
     {
         return $this->belongsTo(User::class, 'guru_id');
     }
+
+    /**
+     * Relasi ke kelas
+     */
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class);
+        return $this->belongsTo(Kelas::class, 'kelas_id');
     }
+
+    /**
+     * Relasi ke jurusan
+     */
     public function jurusan()
     {
-        return $this->belongsTo(Jurusan::class);
+        return $this->belongsTo(Jurusan::class, 'jurusan_id');
     }
 }

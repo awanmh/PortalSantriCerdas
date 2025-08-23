@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,35 +10,19 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -47,8 +30,36 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Relasi ke jadwal (jika guru)
+     */
     public function jadwal()
     {
-        return $this->hasMany(Jadwal::class,'guru_id');
+        return $this->hasMany(Jadwal::class, 'guru_id');
+    }
+
+    /**
+     * Relasi ke absensi guru
+     */
+    public function absensiGuru()
+    {
+        return $this->hasMany(AbsensiGuru::class, 'guru_id'); // ✅ fix, defaultnya tadi cari user_id
+    }
+
+    /**
+     * Relasi ke absensi siswa
+     */
+    public function absensiSiswa()
+    {
+        return $this->hasMany(AbsensiSiswa::class, 'siswa_id'); // ✅ fix
+    }
+
+    /**
+     * Relasi ke kelas (via pivot)
+     */
+    public function kelas()
+    {
+        return $this->belongsToMany(Kelas::class, 'kelas_user', 'user_id', 'kelas_id');
     }
 }

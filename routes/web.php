@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\CatatanPelanggaranController;
 use App\Http\Controllers\JadwalController;
+use App\Http\Controllers\AbsensiGuruController;
+use App\Http\Controllers\AbsensiSiswaController;
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -37,6 +40,16 @@ Route::middleware(['auth','role:guru_bk'])->group(function () {
 
 Route::middleware(['auth','role:guru'])->group(function(){
     Route::resource('jadwal',JadwalController::class);
+});
+
+Route::middleware(['auth','role:guru'])->group(function () {
+    // absensi guru
+    Route::post('/guru/absensi', [AbsensiGuruController::class, 'store'])->name('guru.absensi.store');
+});
+
+Route::middleware(['auth','role:siswa'])->group(function () {
+    // absensi siswa
+    Route::post('/siswa/absensi', [AbsensiSiswaController::class, 'store'])->name('siswa.absensi.store');
 });
 
 require __DIR__ . '/auth.php';

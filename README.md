@@ -1,191 +1,131 @@
-# 📚 SMK Monitoring App (Backend)
+# 📚 SMK Monitoring App (Backend + Frontend Options)
 
-Aplikasi ini adalah **backend** untuk sistem monitoring kegiatan di SMK, termasuk:
-- Jadwal pelajaran, event sekolah
-- Pencatatan pelanggaran siswa
-- Manajemen data guru, kelas, dan jurusan
-- Role & permission berbasis **Laravel Permission**
-- Siap terhubung dengan IoT (misalnya alat PinjerScreen) untuk monitoring otomatis
+Aplikasi monitoring kegiatan di SMK, mencakup:
+- Absensi siswa & guru (GPS + foto)
+- Jadwal pelajaran
+- Catatan pelanggaran siswa
+- Manajemen user (Admin, Guru, Guru BK, Siswa)
 
-Backend ini dibuat menggunakan **Laravel 11** dengan database **PostgreSQL + PostGIS** untuk mendukung data spasial (lokasi).
+Backend dibangun dengan **Laravel 11 + PostgreSQL (PostGIS)**, siap integrasi dengan GIS & IoT.
 
 ---
 
 ## 🚀 Fitur Utama
-
-- **Autentikasi & Role Management**:
-  - Admin
-  - Guru
-  - Guru BK
-  - Siswa
-- **Manajemen Jadwal**:
-  - Jadwal pelajaran per kelas, jurusan, dan jenjang (X, XI, XII)
-  - Jadwal event sekolah
-- **Catatan Pelanggaran**:
-  - Input pelanggaran oleh guru
-  - Rekap pelanggaran oleh guru BK
-- **Integrasi IoT (Coming Soon)**:
-  - Komunikasi antara backend dan perangkat IoT untuk presensi/monitoring
+- ✅ Login dengan role (Admin, Guru, BK, Siswa)
+- ✅ CRUD Jadwal Pelajaran
+- ✅ Catatan Pelanggaran
+- ✅ Absensi Guru & Siswa (API support foto + GPS)
+- 🔜 Validasi GPS (radius sekolah)
+- 🔜 Integrasi IoT (Face ID, WiFi Sekolah)
 
 ---
 
-## 📦 Teknologi yang Digunakan
-
-- **Laravel 11**
-- **PostgreSQL** (Database utama)
-- **PostGIS** (Geospatial Extension untuk lokasi)
-- **Laravel Permission** (Manajemen Role)
-- **Inertia.js + Vue 3** (Default frontend Laravel Breeze)
-- **Tailwind CSS** (Styling bawaan Breeze)
+## 📦 Teknologi
+- Laravel 11
+- PostgreSQL + PostGIS
+- Laravel Permission
+- Vue 3 (Breeze) / Template Admin / SPA (opsional)
+- TailwindCSS
 
 ---
 
-## 🛠 Persiapan Sebelum Install
-
-1. **Install Git**
-   - [Download Git](https://git-scm.com/downloads)
-   - Cek instalasi:
-     ```bash
-     git --version
-     ```
-
-2. **Install PHP (versi ≥ 8.2)**
-   - Bisa pakai [XAMPP](https://www.apachefriends.org/) atau Laragon.
-
-3. **Install Composer**
-   - [Download Composer](https://getcomposer.org/)
-
-4. **Install Node.js (≥ 18)**
-   - [Download Node.js](https://nodejs.org/)
-
-5. **Siapkan PostgreSQL + PostGIS**
-   - Install PostgreSQL
-   - Tambahkan ekstensi PostGIS di database:
-     ```sql
-     CREATE EXTENSION postgis;
-     ```
-
----
-
-## 📥 Instalasi (Backend)
-
+## 🛠 Instalasi Cepat (Backend)
 ```bash
-# 1. Clone repository (branch backend)
-git clone -b backend https://github.com/awanmh/PortalSantriCerdas.git
-cd PortalSantriCerdas
+git clone -b backend-docs https://github.com/username/smk_monitoring_app.git
+cd smk_monitoring_app
 
-# 2. Install dependencies PHP
 composer install
-
-# 3. Install dependencies JS
 npm install
+cp .env.example .env  # edit DB sesuai setting
 
-# 4. Duplikasi file .env
-cp .env.example .env
-
-# 5. Edit konfigurasi database di .env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=smk_monitoring
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-
-# 6. Generate key Laravel
 php artisan key:generate
-
-# 7. Jalankan migrasi + seeder
 php artisan migrate:fresh --seed
-
-# 8. Jalankan server Laravel
 php artisan serve
-
-# 9. Jalankan Vite (frontend default)
 npm run dev
-🌐 Akses Aplikasi
-URL: http://127.0.0.1:8000
 
-Login Default (dari seeder RolePermissionSeeder):
+👤 Login default:
 
-Admin
-Email: admin@example.com
-Password: password
+Role	Email	Password
+Admin	admin@example.com
+	password
+Guru	guru@example.com
+	password
+GuruBK	gurubk@example.com
+	password
+Siswa	siswa@example.com
+	password
 
-Guru
-Email: guru@example.com
-Password: password
+  📡 API Contoh
 
-Guru BK
-Email: gurubk@example.com
-Password: password
+GET /api/ping → tes koneksi
 
-Siswa
-Email: siswa@example.com
-Password: password
+POST /api/absensi-guru
 
-app/
- ├── Http/
- │   ├── Controllers/    # Semua controller
- │   ├── Middleware/     # Middleware aplikasi
- │
- ├── Models/             # Model Eloquent
-
-database/
- ├── migrations/         # Struktur tabel
- ├── seeders/            # Data awal
-
-routes/
- ├── web.php              # Routing web
- ├── auth.php             # Routing auth
-
-resources/
- ├── js/                  # Vue.js components
- ├── views/               # Blade templates
-
-public/
- ├── assets/              # File publik
+{ "guru_id": 2, "tanggal": "2025-08-22", "status": "hadir" }
 
 
-# Menjalankan migrasi + seeder
-php artisan migrate:fresh --seed
+POST /api/absensi-siswa
 
-# Membuat controller
-php artisan make:controller NamaController
+{ "siswa_id": 4, "jadwal_id": 1, "keterangan": "Sakit" }
 
-# Membuat model + migration
-php artisan make:model NamaModel -m
+🎨 Frontend Options
 
-# Membuat seeder
-php artisan make:seeder NamaSeeder
+Frontend hanya menampilkan data dari API. Tim frontend bisa pilih opsi sesuai kemampuan:
 
-🗂 Branch Repository
-main → Branch gabungan backend + frontend (final release)
+🅰️ Laravel Breeze (Vue/React)
 
-backend → Branch khusus API & backend
+Paling mudah (sudah ada login/register).
 
-🤝 Kontribusi
-Fork repo
+Jalankan:
 
-Buat branch baru (feature/nama-fitur)
+composer require laravel/breeze --dev
+php artisan breeze:install vue   # atau react
+npm install && npm run dev
 
-Commit perubahan
+🅱️ Template Admin (SB Admin 2 / CoreUI)
 
-Push ke branch baru
+Tampilan langsung profesional.
 
-Buat Pull Request
+Download template → copy ke public/ → panggil API dengan axios.
 
-📜 Lisensi
-Proyek ini bersifat open-source dan menggunakan lisensi MIT.
+🅾️ Full SPA (Vue/React/Angular terpisah)
+
+Untuk tim lebih mahir.
+
+Jalankan:
+
+npm create vue@latest smk-monitoring-frontend
+cd smk-monitoring-frontend
+npm install axios vue-router
+npm run dev
+
+
+🚦 Rekomendasi:
+
+MVP Awal → Breeze (Vue)
+
+Upgrade UI cepat → Template SB Admin
+
+Jangka panjang → SPA terpisah
+
+🗺 Roadmap
+
+🔲 Validasi GPS (radius sekolah)
+
+🔲 Peta GIS titik absensi
+
+🔲 Integrasi WiFi sekolah
+
+🔲 IoT Face Recognition
+
+🔲 Export laporan (Excel/PDF)
 
 📌 Progress Saat Ini
- Setup Laravel 11 + PostgreSQL
 
- Setup Role & Permission
-
- CRUD Jadwal
-
- CRUD Catatan Pelanggaran
-
- Integrasi IoT
-
- Finalisasi frontend dari tim lain
+✅ Setup Laravel 11 + PostgreSQL
+✅ Setup Role & Permission
+✅ CRUD Jadwal
+✅ CRUD Catatan Pelanggaran
+✅ CRUD Absensi Guru & Siswa (API)
+🔲 Integrasi GIS + IoT
+🔲 Finalisasi Frontend

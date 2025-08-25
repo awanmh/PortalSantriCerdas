@@ -1,0 +1,113 @@
+├── PORTALSANTRICERDAS/
+│   ├── Console/
+│   ├── Exceptions/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/
+│   │   │   │   ├── AuthenticatedSessionController.php
+│   │   │   │   ├── ComfirmablePasswordController.php
+│   │   │   │   ├── EmailVerificationNotificationController.php
+│   │   │   │   ├── EmailVerificationPromptController.php
+│   │   │   │   ├── NewPasswordController.php
+│   │   │   │   ├── PasswordController.php
+│   │   │   │   ├── PasswordResetLinkController.php
+│   │   │   │   ├── RegisteredUserController.php
+│   │   │   │   └── VerifyEmailController.php
+│   │   │   ├── AbsensiGuruController.php
+│   │   │   ├── AbsensisiswaController.php
+│   │   │   ├── CatatanPelanggaranController.php
+│   │   │   ├── Controller.php
+│   │   │   ├── JadwalController.php
+│   │   │   └── ProfilController.php
+│   │   ├── Middleware/
+│   │   │   └── HandleInertiaRequests.php
+│   │   ├── Request/
+│   │   │   ├── Auth/
+│   │   │   │   └── LoginRequests.php
+│   │   │   └── ProfileUpdateRequest.php
+│   ├── Models/
+│   │   ├── AbsenGuru.php
+│   │   ├── AbsenSiswa.php
+│   │   ├── CatatanPelanggaran.php
+│   │   ├── Jadwal.php
+│   │   ├── Jurusan.php
+│   │   ├── Kelas.php
+│   │   ├── User.php
+│   │   └── Zona.php
+│   ├── Providers/
+│   │   ├── AppServiceProvider.php
+│   │   └── RouteServiceProvider.php
+├── bootstrap/
+│   ├── cache/
+│   │   ├── packages.php
+│   │   └──  services.php
+│   ├── app.php
+│   └── providers.php
+├── config/
+│   ├── app.php
+│   ├── auth.php
+│   ├── cache.php
+│   ├── database.php
+│   ├── filesystems.php
+│   ├── logging.php
+│   ├── mail.php
+│   ├── permission.php
+│   ├── queue.php
+│   ├── services.php
+│   └── session.php
+├── database/
+│   ├── factories/
+│   │   └── UserFactory.php
+│   ├── migrations/
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 2025_08_11_062459_create_permission_tables.php
+│   │   ├── 2025_08_12_072814_create_catatan_pelanggaran_table.php
+│   │   ├── 2025_08_12_145226_create_kelas_table.php
+│   │   ├── 2025_08_12_145233_create_jurusan_table.php
+│   │   ├── 2025_08_12_145241_create_jadwal_table.php
+│   │   ├── 2025_08_14_112328_create_zone_table.php
+│   │   ├── 2025_08_14_112418_create_absensi_siswa_table.php
+│   │   ├── 2025_08_14_113907_create_absensi_guru_table.php
+│   │   ├── 2025_08_14_113951_add_wali_kelas_to_kelas_table.php
+│   │   ├── 2025_08_14_114602_create_kelas_user_table.php
+│   │   └── 2025_08_14_114724_create_bk_followup_table.php
+│   ├── seeders/
+│   │   ├── DatabaseSeeder.php
+│   │   └── RolePermissionSeeder.php
+├── public/
+│   ├── css/
+│   ├── js/
+│   └── index.php
+├── resources/
+│   ├── css/
+│   ├── js/
+│   └── views/
+├── routes/
+│   ├── api.php
+│   ├── auth.php
+│   ├── console.php
+│   └── web.php
+├── storage/
+│   ├── app/
+│   ├── framework/
+│   │   ├── cache/
+│   │   ├── sessions/
+│   │   ├── testing/
+│   │   └── views/
+│   ├── logs/
+│   └── public/
+├── tests/
+│   ├── Feature/
+│   ├── Unit/
+│   └── TestCase.php
+├── .env
+├── .gitattributes
+├── .gitignore
+├── artisan
+├── composer.json
+├── composer.lock
+├── package.json
+├── readme.md
+└── server.php

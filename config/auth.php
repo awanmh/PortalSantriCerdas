@@ -40,9 +40,8 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-    ],
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | User Providers
     |--------------------------------------------------------------------------
@@ -58,12 +57,18 @@ return [
     | Supported: "database", "eloquent"
     |
     */
+        'api' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
+    ],
 
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
+        
 
         // 'users' => [
         //     'driver' => 'database',
@@ -98,6 +103,8 @@ return [
             'throttle' => 60,
         ],
     ],
+    
+    
 
     /*
     |--------------------------------------------------------------------------

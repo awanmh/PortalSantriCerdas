@@ -10,7 +10,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
         'name',
@@ -44,7 +44,7 @@ class User extends Authenticatable
      */
     public function absensiGuru()
     {
-        return $this->hasMany(AbsensiGuru::class, 'guru_id'); // ✅ fix, defaultnya tadi cari user_id
+        return $this->hasMany(AbsensiGuru::class, 'guru_id');
     }
 
     /**
@@ -52,7 +52,7 @@ class User extends Authenticatable
      */
     public function absensiSiswa()
     {
-        return $this->hasMany(AbsensiSiswa::class, 'siswa_id'); // ✅ fix
+        return $this->hasMany(AbsensiSiswa::class, 'siswa_id');
     }
 
     /**

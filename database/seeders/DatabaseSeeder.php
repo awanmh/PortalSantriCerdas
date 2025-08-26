@@ -18,8 +18,9 @@ class DatabaseSeeder extends Seeder
             KelasSeeder::class,
             JurusanSeeder::class,
             JadwalSeeder::class,
-            AbsensiSeeder::class, // ✅ tambahin ini
+            AbsensiSeeder::class,
         ]);
+
 
         // User dummy tambahan
         User::factory()->create([

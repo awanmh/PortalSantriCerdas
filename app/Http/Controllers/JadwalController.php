@@ -13,8 +13,17 @@ class JadwalController extends Controller
     //
     public function index()
     {
-        $jadwal = Jadwal::with(['guru', 'kelas', 'jurusan'])->get();
-        return view('jadwal.index', compact('jadwal'));
+        // Untuk sekarang, kita gunakan data dummy
+        $jadwals = [
+            ['id' => 1, 'hari' => 'Senin', 'jam' => '07:00 - 08:30', 'mapel' => 'Fikih', 'guru' => 'Ustadz Ahmad'],
+            ['id' => 2, 'hari' => 'Senin', 'jam' => '08:30 - 10:00', 'mapel' => 'Aqidah Akhlak', 'guru' => 'Ustadz Hasan'],
+            ['id' => 3, 'hari' => 'Selasa', 'jam' => '07:00 - 08:30', 'mapel' => 'Bahasa Arab', 'guru' => 'Ustadzah Fatimah'],
+            ['id' => 4, 'hari' => 'Selasa', 'jam' => '08:30 - 10:00', 'mapel' => 'Al-Qur\'an Hadits', 'guru' => 'Ustadz Abdullah'],
+        ];
+
+        return Inertia::render('Jadwal/Index', [
+            'jadwals' => $jadwals
+        ]);
     }
     public function create()
     {

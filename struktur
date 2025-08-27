@@ -1,3 +1,7 @@
+├── assets/
+│   ├── ClassDiagram.png
+│   ├── Flowchart.png
+│   └──logo.jpg
 ├── PORTALSANTRICERDAS/
 │   ├── Console/
 │   ├── Exceptions/
@@ -17,6 +21,7 @@
 │   │   │   ├── AbsensisiswaController.php
 │   │   │   ├── CatatanPelanggaranController.php
 │   │   │   ├── Controller.php
+│   │   │   ├── DashboardController.php
 │   │   │   ├── JadwalController.php
 │   │   │   └── ProfilController.php
 │   │   ├── Middleware/
@@ -83,11 +88,53 @@
 │   │   └── UserSeeder.php
 ├── public/
 │   ├── css/
+│   ├── images/
+│   │   └── logo.png
 │   ├── js/
 │   └── index.php
 ├── resources/
 │   ├── css/
 │   ├── js/
+│   │   ├── Components/
+│   │   │   ├── ApplicationLogo.vue
+│   │   │   ├── Checkbox.vue
+│   │   │   ├── DangerButton.vue
+│   │   │   ├── Dropdown.vue
+│   │   │   ├── DropdownLink.vue
+│   │   │   ├── InputError.vue
+│   │   │   ├── InputLabel.vue
+│   │   │   ├── Modal.vue
+│   │   │   ├── NavLink.vue
+│   │   │   ├── PrimaryButton.vue
+│   │   │   ├── ResponsiveNavLink.vue
+│   │   │   ├── SecondaryButton.vue
+│   │   │   └── TextInput.vue
+│   │   ├── Layouts/
+│   │   │   ├── AuthenticatedLayout.vue
+│   │   │   └── GuestLayout.vue
+│   │   ├── Layouts/
+│   │   │   ├── AuthenticatedLayout.vue
+│   │   │   └── GuestLayout.vue
+│   │   ├── Pages/
+│   │   │   ├── Auth/
+│   │   │   │   ├── ConfirmPassword.vue
+│   │   │   │   ├── ForgotPassword.vue
+│   │   │   │   ├── Login.vue
+│   │   │   │   ├── Register.vue
+│   │   │   │   ├── ResetPassword.vue
+│   │   │   │   └── VerifyEmail.vue
+│   │   │   ├── Jadwal/
+│   │   │   │   │   └── Index.vue
+│   │   │   ├── Profile/
+│   │   │   │   ├── Absensi/
+│   │   │   │   │   ├── DeleteUserForm.vue
+│   │   │   │   │   ├── UpdatePasswordForm.vue
+│   │   │   │   │   └── UpdateProfileInformationForm.vue
+│   │   │   │   └── Siswa.vue
+│   │   │   ├── Dashboard.vue
+│   │   │   ├── Welcome.vue
+│   │   ├── App.js
+│   │   └── bootstrap.js
 │   └── views/
 │   │   ├── Absensi/
 │   │   │   ├── guru.blade.php

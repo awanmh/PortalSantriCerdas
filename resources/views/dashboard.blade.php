@@ -1,7 +1,11 @@
-//resources/views/dashboard.blade.php
-@extends('layouts.app')
+@extends('Layouts.app')
+
+@section('title', 'Dashboard')
 
 @section('content')
-    <h1 class="text-2xl font-bold mb-4">Dashboard</h1>
-    <p>Selamat datang di Portal Santri Cerdas 🚀</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-4 rounded-lg shadow">Absensi Siswa</div>
+    <div class="bg-white p-4 rounded-lg shadow">Absensi Guru</div>
+    <div class="bg-white p-4 rounded-lg shadow">Catatan Pelanggaran</div>
+</div>
 @endsection

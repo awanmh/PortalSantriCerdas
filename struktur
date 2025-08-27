@@ -74,8 +74,13 @@
 │   │   ├── 2025_08_14_114602_create_kelas_user_table.php
 │   │   └── 2025_08_14_114724_create_bk_followup_table.php
 │   ├── seeders/
+│   │   ├── AbsensiSeeder.php
 │   │   ├── DatabaseSeeder.php
-│   │   └── RolePermissionSeeder.php
+│   │   ├── JadwalSeeder.php
+│   │   ├── JurusanSeeder.php
+│   │   ├── KelasSeeder.php
+│   │   ├── RolePermissionSeeder.php
+│   │   └── UserSeeder.php
 ├── public/
 │   ├── css/
 │   ├── js/
@@ -84,6 +89,26 @@
 │   ├── css/
 │   ├── js/
 │   └── views/
+│   │   ├── Absensi/
+│   │   │   ├── guru.blade.php
+│   │   │   └── siswa.blade.php
+│   │   ├── Auth/
+│   │   │   ├── login.blade.php
+│   │   │   └── register.blade.php
+│   │   ├── Catatan/
+│   │   │   └── pelanggaran.blade.php
+│   │   ├── Components/
+│   │   │   ├── footer.blade.php
+│   │   │   ├── navbar.blade.php
+│   │   │   └── sidebar.blade.php
+│   │   ├── Jadwal/
+│   │   │   └── index.blade.php
+│   │   ├── Layouts/
+│   │   │   └── app.blade.php
+│   │   ├── app.blade.php
+│   │   ├── dashboard.blade.php
+│   │   ├── profiles.blade.php
+│   │   └── welcome.blade.php
 ├── routes/
 │   ├── api.php
 │   ├── auth.php

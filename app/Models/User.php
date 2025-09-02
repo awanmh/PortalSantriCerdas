@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,54 +13,42 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role_keyword' // tambahkan field ini
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
-
     /**
-     * Relasi ke jadwal (jika guru)
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
      */
-    public function jadwal()
-    {
-        return $this->hasMany(Jadwal::class, 'guru_id');
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
 
     /**
-     * Relasi ke absensi guru
-     */
-    public function absensiGuru()
-    {
-        return $this->hasMany(AbsensiGuru::class, 'guru_id');
-    }
-
-    /**
-     * Relasi ke absensi siswa
-     */
-    public function absensiSiswa()
-    {
-        return $this->hasMany(AbsensiSiswa::class, 'siswa_id');
-    }
-
-    /**
-     * Relasi ke kelas (via pivot)
+     * Relasi dengan kelas (hanya untuk siswa)
      */
     public function kelas()
     {
-        return $this->belongsToMany(Kelas::class, 'kelas_user', 'user_id', 'kelas_id');
+        return $this->belongsToMany(Kelas::class, 'kelas_user');
     }
 }

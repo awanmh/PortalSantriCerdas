@@ -1,0 +1,576 @@
+﻿07 SEEDERS
+================================================================================
+Generated on: 2025-09-02 18:00:55
+Project Path: D:\smk_monitoring_app
+
+------------------------------------------------------------
+FILE: database\seeders\AbsensiSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\AbsensiSeeder.php
+Size: 1.03 KB
+Last Modified: 08/22/2025 18:20:10
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\AbsensiGuru;
+use App\Models\AbsensiSiswa;
+use App\Models\User;
+use App\Models\Jadwal;
+
+class AbsensiSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $guru = User::role('guru')->first();
+        $siswa = User::role('siswa')->first();
+        $jadwal = Jadwal::first();
+
+        // Absensi Guru
+        AbsensiGuru::create([
+            'guru_id' => $guru->id,
+            'tanggal' => now()->toDateString(),
+            'status' => 'hadir',
+            'keterangan' => 'Masuk tepat waktu',
+        ]);
+
+        // Absensi Siswa
+        AbsensiSiswa::create([
+            'siswa_id' => $siswa->id,
+            'jadwal_id' => $jadwal->id,
+            'waktu' => now(),
+            'foto_path' => 'absensi/foto1.jpg',
+            'lat' => '-7.2504450',
+            'lng' => '112.7688450',
+            'valid_zona' => true,
+            'device_info' => ['browser' => 'Chrome', 'os' => 'Windows'],
+            'keterangan' => 'Hadir',
+        ]);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: database\seeders\DatabaseSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\DatabaseSeeder.php
+Size: 625 bytes
+Last Modified: 08/23/2025 18:30:47
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        $this->call([
+            RolePermissionSeeder::class,
+            UserSeeder::class,
+            KelasSeeder::class,
+            JurusanSeeder::class,
+            JadwalSeeder::class,
+            AbsensiSeeder::class,
+        ]);
+
+
+        // User dummy tambahan
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\seeders\JadwalSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\JadwalSeeder.php
+Size: 4.61 KB
+Last Modified: 08/31/2025 18:07:57
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Jadwal;
+use App\Models\Kelas;
+use App\Models\Jurusan;
+use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
+class JadwalSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // 1. Pastikan data dasar sudah ada
+        if (!Kelas::exists() || !Jurusan::exists()) {
+            $this->command->warn('⚠️ Seeder Jadwal gagal: Kelas atau Jurusan belum ada.');
+            $this->command->info('💡 Silakan jalankan seeder Kelas dan Jurusan terlebih dahulu.');
+            return;
+        }
+
+        // 2. Ambil guru dengan role yang benar
+        $gurus = User::role('guru')->get();
+        if ($gurus->isEmpty()) {
+            $this->command->warn('⚠️ Seeder Jadwal gagal: Tidak ada user dengan role guru.');
+            $this->command->info('💡 Silakan buat user dengan role guru terlebih dahulu.');
+            return;
+        }
+
+        // 3. Buat jadwal pelajaran untuk semua kelas
+        $this->buatJadwalPelajaran($gurus);
+
+        // 4. Buat event untuk kalender sekolah
+        $this->buatEventSekolah($gurus);
+
+        $this->command->info('✅ Seeder Jadwal berhasil dijalankan!');
+    }
+
+    private function buatJadwalPelajaran($gurus)
+    {
+        $kelas = Kelas::all();
+        $jurusan = Jurusan::all();
+        $mataPelajaran = [
+            'Matematika',
+            'Bahasa Indonesia',
+            'Bahasa Inggris',
+            'IPA',
+            'IPS',
+            'Seni Budaya',
+            'PJOK',
+            'PPKn',
+            'TIK',
+            'Agama'
+        ];
+
+        $hari = ['senin', 'selasa', 'rabu', 'kamis', 'jumat'];
+        $today = Carbon::today();
+
+        $totalPelajaran = 0;
+
+        foreach ($kelas as $k) {
+            foreach ($hari as $day) {
+                // Hitung tanggal untuk hari ini + offset
+                $dayOfWeek = array_search($day, ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']);
+                $date = $today->copy()->next($dayOfWeek + 1);
+
+                // Buat 4 pelajaran per hari
+                for ($i = 1; $i <= 4; $i++) {
+                    $jamMulai = sprintf('%02d:00:00', 7 + ($i - 1) * 2);
+                    $jamSelesai = sprintf('%02d:30:00', 8 + ($i - 1) * 2);
+
+                    Jadwal::create([
+                        'judul_event' => $mataPelajaran[array_rand($mataPelajaran)],
+                        'deskripsi' => 'Pembelajaran ' . $mataPelajaran[array_rand($mataPelajaran)] . ' untuk kelas ' . $k->nama,
+                        'tanggal' => $date->format('Y-m-d'),
+                        'jam_mulai' => $jamMulai,
+                        'jam_selesai' => $jamSelesai,
+                        'guru_id' => $gurus->random()->id,
+                        'kelas_id' => $k->id,
+                        'jurusan_id' => $jurusan->random()->id,
+                        'jenjang' => $k->jenjang,
+                        'tipe' => 'pelajaran',
+                    ]);
+
+                    $totalPelajaran++;
+                }
+            }
+        }
+
+        $this->command->info(" • {$totalPelajaran} jadwal pelajaran berhasil dibuat");
+    }
+
+    private function buatEventSekolah($gurus)
+    {
+        $kelas = Kelas::all();
+        $jurusan = Jurusan::all();
+
+        $eventTypes = [
+            'Pelatihan' => 'Pelatihan penggunaan laboratorium komputer',
+            'Seminar' => 'Seminar karir dengan alumni',
+            'Lomba' => 'Lomba cerdas cermat antar kelas',
+            'Ekstrakurikuler' => 'Ekstrakurikuler pramuka',
+            'Kegiatan' => 'Kegiatan bakti sosial',
+            'Ujian' => 'Ujian tengah semester',
+            'Pertemuan' => 'Pertemuan orang tua murid'
+        ];
+
+        $totalEvent = 0;
+        $today = Carbon::today();
+
+        // Buat 15 event untuk 30 hari ke depan
+        for ($i = 0; $i < 15; $i++) {
+            $randomDate = $today->copy()->addDays(rand(1, 30));
+            $eventType = array_rand($eventTypes);
+
+            Jadwal::create([
+                'judul_event' => $eventType,
+                'deskripsi' => $eventTypes[$eventType],
+                'tanggal' => $randomDate->format('Y-m-d'),
+                'jam_mulai' => sprintf('%02d:00:00', rand(8, 15)),
+                'jam_selesai' => sprintf('%02d:00:00', rand(16, 18)),
+                'guru_id' => $gurus->random()->id,
+                'kelas_id' => $kelas->random()->id,
+                'jurusan_id' => $jurusan->random()->id,
+                'jenjang' => strval(rand(10, 12)),
+                'tipe' => 'event',
+            ]);
+
+            $totalEvent++;
+        }
+
+        $this->command->info(" • {$totalEvent} event sekolah berhasil dibuat");
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\seeders\JurusanSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\JurusanSeeder.php
+Size: 357 bytes
+Last Modified: 08/22/2025 17:11:05
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Jurusan;
+
+class JurusanSeeder extends Seeder
+{
+    public function run(): void
+    {
+        Jurusan::create(['nama' => 'Rekayasa Perangkat Lunak']);
+        Jurusan::create(['nama' => 'Teknik Jaringan Komputer']);
+        Jurusan::create(['nama' => 'Multimedia']);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: database\seeders\KelasSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\KelasSeeder.php
+Size: 476 bytes
+Last Modified: 08/21/2025 16:30:19
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Kelas;
+
+class KelasSeeder extends Seeder
+{
+    public function run(): void
+    {
+        Kelas::create([
+            'nama' => 'X RPL 1',
+            'tingkat' => '10',
+        ]);
+
+        Kelas::create([
+            'nama' => 'XI RPL 1',
+            'tingkat' => '11',
+        ]);
+
+        Kelas::create([
+            'nama' => 'XII RPL 1',
+            'tingkat' => '12',
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\seeders\RolePermissionSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\RolePermissionSeeder.php
+Size: 2.39 KB
+Last Modified: 09/02/2025 17:23:32
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+class RolePermissionSeeder extends Seeder
+{
+    public function run()
+    {
+        // Buat permissions (hanya jika belum ada)
+        $permissions = [
+            // Absensi
+            'absensi-siswa-create',
+            'absensi-siswa-view',
+            'absensi-guru-create',
+            'absensi-guru-view',
+            'absensi-bk-view',
+
+            // Zona
+            'zona-manage',
+            'zona-view',
+
+            // Pelanggaran
+            'pelanggaran-create',
+            'pelanggaran-view',
+            'pelanggaran-manage',
+
+            // Kelas
+            'kelas-view',
+            'kelas-manage',
+
+            // Jadwal
+            'jadwal-view',
+            'jadwal-manage',
+
+            // User
+            'user-view',
+            'user-manage',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
+
+        // Buat role dan assign permissions (hanya jika belum ada)
+        $siswa = Role::firstOrCreate(['name' => 'siswa']);
+        $siswa->syncPermissions([
+            'absensi-siswa-create',
+            'absensi-siswa-view',
+            'jadwal-view',
+            'kelas-view'
+        ]);
+
+        $guru = Role::firstOrCreate(['name' => 'guru']);
+        $guru->syncPermissions([
+            'absensi-guru-create',
+            'absensi-guru-view',
+            'absensi-siswa-view',
+            'pelanggaran-create',
+            'jadwal-view',
+            'kelas-view'
+        ]);
+
+        $it = Role::firstOrCreate(['name' => 'it']);
+        $it->syncPermissions([
+            'zona-manage',
+            'absensi-guru-view',
+            'absensi-siswa-view',
+            'pelanggaran-view',
+            'kelas-manage',
+            'user-manage'
+        ]);
+
+        $bk = Role::firstOrCreate(['name' => 'bk']);
+        $bk->syncPermissions([
+            'pelanggaran-view',
+            'pelanggaran-manage',
+            'absensi-siswa-view',
+            'absensi-guru-view',
+            'jadwal-view',
+            'kelas-view'
+        ]);
+
+        // Assign role default ke user admin (hanya jika belum memiliki role)
+        $user = \App\Models\User::first();
+        if ($user && !$user->hasRole(['siswa', 'guru', 'it', 'bk'])) {
+            $user->assignRole('it');
+        }
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\seeders\UserSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\UserSeeder.php
+Size: 1.95 KB
+Last Modified: 09/02/2025 17:16:17
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Kelas;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+class UserSeeder extends Seeder
+{
+    public function run()
+    {
+        // Pastikan kelas ada
+        if (Kelas::count() === 0) {
+            Kelas::create([
+                'nama_kelas' => 'XII RPL 1',
+                'jurusan' => 'Rekayasa Perangkat Lunak',
+                'wali_kelas' => 'Guru Wali'
+            ]);
+        }
+
+        // Admin/IT
+        User::create([
+            'name' => 'Admin IT',
+            'email' => 'admin.it@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('it');
+
+        User::create([
+            'name' => 'Teknisi 1',
+            'email' => 'teknisi1.teknisi@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('it');
+
+        // Guru
+        User::create([
+            'name' => 'Guru Matematika',
+            'email' => 'guru1.guru@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('guru');
+
+        User::create([
+            'name' => 'Pengajar IPA',
+            'email' => 'guru2.pengajar@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('guru');
+
+        // BK
+        User::create([
+            'name' => 'BK Utama',
+            'email' => 'bk1.bk@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('bk');
+
+        User::create([
+            'name' => 'Konselor',
+            'email' => 'konseling1.konseling@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('bk');
+
+        // Siswa
+        for ($i = 1; $i <= 10; $i++) {
+            User::create([
+                'name' => 'Siswa ' . $i,
+                'email' => 'siswa' . $i . '.siswa@gmail.com',
+                'password' => Hash::make('password'),
+            ])->assignRole('siswa');
+        }
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\seeders\ZonaSeeder.php
+Path: D:\smk_monitoring_app\database\seeders\ZonaSeeder.php
+Size: 924 bytes
+Last Modified: 08/29/2025 22:05:17
+------------------------------------------------------------
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Zona;
+
+class ZonaSeeder extends Seeder
+{
+    public function run()
+    {
+        // Koordinat zona sekolah (ganti dengan koordinat sebenarnya)
+        $coordinates = [
+            [106.827153, -6.175392], // longitude, latitude
+            [106.827200, -6.175400],
+            [106.827180, -6.175410],
+            [106.827153, -6.175392] // kembali ke titik awal
+        ];
+
+        // Format WKT untuk polygon
+        $wktPolygon = 'POLYGON((' .
+            implode(', ', array_map(function ($coord) {
+                return $coord[0] . ' ' . $coord[1];
+            }, $coordinates)) .
+            '))';
+
+        // Buat zona sekolah
+        Zona::create([
+            'name' => 'Sekolah SMK',
+            'polygon' => \DB::raw("ST_GeomFromText('{$wktPolygon}', 4326)"),
+            'description' => 'Zona sekolah utama'
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\factories\UserFactory.php
+Path: D:\smk_monitoring_app\database\factories\UserFactory.php
+Size: 1.05 KB
+Last Modified: 08/03/2025 21:58:20
+------------------------------------------------------------
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
+class UserFactory extends Factory
+{
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+        ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+}
+
+
+
+================================================================================
+TOTAL FILES IN CATEGORY: 9
+================================================================================

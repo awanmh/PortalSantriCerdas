@@ -1,0 +1,995 @@
+﻿06 MIGRATIONS
+================================================================================
+Generated on: 2025-09-02 18:00:53
+Project Path: D:\smk_monitoring_app
+
+------------------------------------------------------------
+FILE: database\migrations\0001_01_01_000000_create_users_table.php
+Path: D:\smk_monitoring_app\database\migrations\0001_01_01_000000_create_users_table.php
+Size: 1.44 KB
+Last Modified: 08/03/2025 21:58:20
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\0001_01_01_000001_create_cache_table.php
+Path: D:\smk_monitoring_app\database\migrations\0001_01_01_000001_create_cache_table.php
+Size: 849 bytes
+Last Modified: 08/03/2025 21:58:20
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\0001_01_01_000002_create_jobs_table.php
+Path: D:\smk_monitoring_app\database\migrations\0001_01_01_000002_create_jobs_table.php
+Size: 1.77 KB
+Last Modified: 08/03/2025 21:58:20
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_11_062459_create_permission_tables.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_11_062459_create_permission_tables.php
+Size: 6.39 KB
+Last Modified: 08/11/2025 13:24:59
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        $teams = config('permission.teams');
+        $tableNames = config('permission.table_names');
+        $columnNames = config('permission.column_names');
+        $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';
+        $pivotPermission = $columnNames['permission_pivot_key'] ?? 'permission_id';
+
+        throw_if(empty($tableNames), new Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.'));
+        throw_if($teams && empty($columnNames['team_foreign_key'] ?? null), new Exception('Error: team_foreign_key on config/permission.php not loaded. Run [php artisan config:clear] and try again.'));
+
+        Schema::create($tableNames['permissions'], static function (Blueprint $table) {
+            // $table->engine('InnoDB');
+            $table->bigIncrements('id'); // permission id
+            $table->string('name');       // For MyISAM use string('name', 225); // (or 166 for InnoDB with Redundant/Compact row format)
+            $table->string('guard_name'); // For MyISAM use string('guard_name', 25);
+            $table->timestamps();
+
+            $table->unique(['name', 'guard_name']);
+        });
+
+        Schema::create($tableNames['roles'], static function (Blueprint $table) use ($teams, $columnNames) {
+            // $table->engine('InnoDB');
+            $table->bigIncrements('id'); // role id
+            if ($teams || config('permission.testing')) { // permission.testing is a fix for sqlite testing
+                $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable();
+                $table->index($columnNames['team_foreign_key'], 'roles_team_foreign_key_index');
+            }
+            $table->string('name');       // For MyISAM use string('name', 225); // (or 166 for InnoDB with Redundant/Compact row format)
+            $table->string('guard_name'); // For MyISAM use string('guard_name', 25);
+            $table->timestamps();
+            if ($teams || config('permission.testing')) {
+                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
+            } else {
+                $table->unique(['name', 'guard_name']);
+            }
+        });
+
+        Schema::create($tableNames['model_has_permissions'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission, $teams) {
+            $table->unsignedBigInteger($pivotPermission);
+
+            $table->string('model_type');
+            $table->unsignedBigInteger($columnNames['model_morph_key']);
+            $table->index([$columnNames['model_morph_key'], 'model_type'], 'model_has_permissions_model_id_model_type_index');
+
+            $table->foreign($pivotPermission)
+                ->references('id') // permission id
+                ->on($tableNames['permissions'])
+                ->onDelete('cascade');
+            if ($teams) {
+                $table->unsignedBigInteger($columnNames['team_foreign_key']);
+                $table->index($columnNames['team_foreign_key'], 'model_has_permissions_team_foreign_key_index');
+
+                $table->primary([$columnNames['team_foreign_key'], $pivotPermission, $columnNames['model_morph_key'], 'model_type'],
+                    'model_has_permissions_permission_model_type_primary');
+            } else {
+                $table->primary([$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
+                    'model_has_permissions_permission_model_type_primary');
+            }
+
+        });
+
+        Schema::create($tableNames['model_has_roles'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotRole, $teams) {
+            $table->unsignedBigInteger($pivotRole);
+
+            $table->string('model_type');
+            $table->unsignedBigInteger($columnNames['model_morph_key']);
+            $table->index([$columnNames['model_morph_key'], 'model_type'], 'model_has_roles_model_id_model_type_index');
+
+            $table->foreign($pivotRole)
+                ->references('id') // role id
+                ->on($tableNames['roles'])
+                ->onDelete('cascade');
+            if ($teams) {
+                $table->unsignedBigInteger($columnNames['team_foreign_key']);
+                $table->index($columnNames['team_foreign_key'], 'model_has_roles_team_foreign_key_index');
+
+                $table->primary([$columnNames['team_foreign_key'], $pivotRole, $columnNames['model_morph_key'], 'model_type'],
+                    'model_has_roles_role_model_type_primary');
+            } else {
+                $table->primary([$pivotRole, $columnNames['model_morph_key'], 'model_type'],
+                    'model_has_roles_role_model_type_primary');
+            }
+        });
+
+        Schema::create($tableNames['role_has_permissions'], static function (Blueprint $table) use ($tableNames, $pivotRole, $pivotPermission) {
+            $table->unsignedBigInteger($pivotPermission);
+            $table->unsignedBigInteger($pivotRole);
+
+            $table->foreign($pivotPermission)
+                ->references('id') // permission id
+                ->on($tableNames['permissions'])
+                ->onDelete('cascade');
+
+            $table->foreign($pivotRole)
+                ->references('id') // role id
+                ->on($tableNames['roles'])
+                ->onDelete('cascade');
+
+            $table->primary([$pivotPermission, $pivotRole], 'role_has_permissions_permission_id_role_id_primary');
+        });
+
+        app('cache')
+            ->store(config('permission.cache.store') != 'default' ? config('permission.cache.store') : null)
+            ->forget(config('permission.cache.key'));
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        $tableNames = config('permission.table_names');
+
+        if (empty($tableNames)) {
+            throw new \Exception('Error: config/permission.php not found and defaults could not be merged. Please publish the package configuration before proceeding, or drop the tables manually.');
+        }
+
+        Schema::drop($tableNames['role_has_permissions']);
+        Schema::drop($tableNames['model_has_roles']);
+        Schema::drop($tableNames['model_has_permissions']);
+        Schema::drop($tableNames['roles']);
+        Schema::drop($tableNames['permissions']);
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_12_072814_create_catatan_pelanggaran_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_12_072814_create_catatan_pelanggaran_table.php
+Size: 840 bytes
+Last Modified: 09/01/2025 09:31:24
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('catatan_pelanggaran', function (Blueprint $table) {
+            $table->id();
+            $table->string('siswa'); // Input manual, bukan foreign key
+            $table->string('guru_bk'); // Input manual, bukan foreign key
+            $table->text('deskripsi');
+            $table->text('tindak_lanjut')->nullable();
+            $table->string('tingkat')->default('ringan'); // ringan, sedang, berat
+            $table->date('tanggal')->default(now());
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('catatan_pelanggaran');
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_12_145226_create_kelas_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_12_145226_create_kelas_table.php
+Size: 893 bytes
+Last Modified: 09/02/2025 17:44:59
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateKelasTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('kelas', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_kelas');
+            $table->string('jurusan');
+            $table->string('wali_kelas');
+            $table->timestamps();
+        });
+
+        Schema::create('kelas_user', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('kelas_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('kelas_user');
+        Schema::dropIfExists('kelas');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_12_145233_create_jurusan_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_12_145233_create_jurusan_table.php
+Size: 567 bytes
+Last Modified: 08/22/2025 16:15:59
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jurusan', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama');
+            $table->timestamps();
+        });
+    }
+
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jurusan');
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_12_145241_create_jadwal_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_12_145241_create_jadwal_table.php
+Size: 742 bytes
+Last Modified: 09/01/2025 09:32:33
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('jadwal', function (Blueprint $table) {
+            $table->id();
+            $table->string('guru'); // Input manual
+            $table->string('kelas'); // Input manual
+            $table->string('mata_pelajaran');
+            $table->string('hari');
+            $table->time('jam_mulai');
+            $table->time('jam_selesai');
+            $table->string('ruang');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('jadwal');
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_14_112328_create_zone_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_14_112328_create_zone_table.php
+Size: 686 bytes
+Last Modified: 08/29/2025 22:29:25
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('zone', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->geometry('polygon')->nullable();
+            $table->string('description')->nullable();
+            $table->string('color')->default('#3498db');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('zone');
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_14_112418_create_absensi_siswa_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_14_112418_create_absensi_siswa_table.php
+Size: 1.23 KB
+Last Modified: 08/18/2025 19:48:45
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('absensi_siswa', function (Blueprint $table) {
+            $table->id();
+
+            // relasi ke tabel users
+            $table->foreignId('siswa_id')
+                ->constrained('users')
+                ->onDelete('cascade');
+
+            // relasi ke tabel jadwal
+            $table->foreignId('jadwal_id')
+                ->nullable()
+                ->constrained('jadwal')
+                ->onDelete('set null');
+
+            $table->timestamp('waktu');
+            $table->string('foto_path')->nullable();
+            $table->decimal('lat', 10, 7)->nullable();
+            $table->decimal('lng', 10, 7)->nullable();
+            $table->boolean('valid_zona')->default(false);
+            $table->json('device_info')->nullable();
+            $table->text('keterangan')->nullable();
+
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('absensi_siswa');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_14_113907_create_absensi_guru_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_14_113907_create_absensi_guru_table.php
+Size: 954 bytes
+Last Modified: 09/01/2025 08:50:19
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('absensi_guru', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('guru_id')->constrained('users')->onDelete('cascade');
+            $table->date('tanggal')->default(now());
+            $table->time('jam_masuk')->nullable();
+            $table->time('jam_keluar')->nullable();
+            $table->string('status')->default('hadir');
+            $table->string('keterangan')->default(''); // Default value string kosong
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('absensi_guru');
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_14_113951_add_wali_kelas_to_kelas_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_14_113951_add_wali_kelas_to_kelas_table.php
+Size: 530 bytes
+Last Modified: 08/14/2025 18:39:51
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('kelas', function (Blueprint $table) {
+            //
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('kelas', function (Blueprint $table) {
+            //
+        });
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_14_114602_create_kelas_user_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_14_114602_create_kelas_user_table.php
+Size: 718 bytes
+Last Modified: 08/22/2025 17:05:22
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('kelas_user', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('kelas_id')->constrained('kelas')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->timestamps();
+            $table->unique(['kelas_id','user_id']); // supaya 1 user tidak bisa dobel di kelas sama
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('kelas_user');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_14_114724_create_bk_followup_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_14_114724_create_bk_followup_table.php
+Size: 539 bytes
+Last Modified: 08/14/2025 18:47:24
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('bk_followup', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('bk_followup');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_23_101404_add_location_to_absensi_tables.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_23_101404_add_location_to_absensi_tables.php
+Size: 854 bytes
+Last Modified: 08/23/2025 17:14:33
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('absensi_siswa', function (Blueprint $table) {
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+        });
+
+        Schema::table('absensi_guru', function (Blueprint $table) {
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+        });
+    }
+
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('absensi_siswa', function (Blueprint $table) {
+            //
+        });
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_23_102858_create_personal_access_tokens_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_23_102858_create_personal_access_tokens_table.php
+Size: 863 bytes
+Last Modified: 08/23/2025 17:28:57
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('personal_access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->morphs('tokenable');
+            $table->text('name');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('personal_access_tokens');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_26_174819_create_telescope_entries_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_26_174819_create_telescope_entries_table.php
+Size: 2.02 KB
+Last Modified: 08/27/2025 00:48:18
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Get the migration connection name.
+     */
+    public function getConnection(): ?string
+    {
+        return config('telescope.storage.database.connection');
+    }
+
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        $schema = Schema::connection($this->getConnection());
+
+        $schema->create('telescope_entries', function (Blueprint $table) {
+            $table->bigIncrements('sequence');
+            $table->uuid('uuid');
+            $table->uuid('batch_id');
+            $table->string('family_hash')->nullable();
+            $table->boolean('should_display_on_index')->default(true);
+            $table->string('type', 20);
+            $table->longText('content');
+            $table->dateTime('created_at')->nullable();
+
+            $table->unique('uuid');
+            $table->index('batch_id');
+            $table->index('family_hash');
+            $table->index('created_at');
+            $table->index(['type', 'should_display_on_index']);
+        });
+
+        $schema->create('telescope_entries_tags', function (Blueprint $table) {
+            $table->uuid('entry_uuid');
+            $table->string('tag');
+
+            $table->primary(['entry_uuid', 'tag']);
+            $table->index('tag');
+
+            $table->foreign('entry_uuid')
+                ->references('uuid')
+                ->on('telescope_entries')
+                ->onDelete('cascade');
+        });
+
+        $schema->create('telescope_monitoring', function (Blueprint $table) {
+            $table->string('tag')->primary();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        $schema = Schema::connection($this->getConnection());
+
+        $schema->dropIfExists('telescope_entries_tags');
+        $schema->dropIfExists('telescope_entries');
+        $schema->dropIfExists('telescope_monitoring');
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_27_092603_create_siswa_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_27_092603_create_siswa_table.php
+Size: 808 bytes
+Last Modified: 08/27/2025 16:26:15
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('siswa', function (Blueprint $table) { // Perhatikan: 'siswa' tanpa "s"
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('nis')->unique();
+            $table->string('nama');
+            $table->enum('kelas', ['X', 'XI', 'XII']);
+            $table->enum('jurusan', ['RPL', 'TKJ', 'TKRO', 'TBSM']);
+            $table->string('no_hp_ortu')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('siswa'); // Tanpa "s"
+    }
+};
+
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_08_29_114542_add_columns_to_zone_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_08_29_114542_add_columns_to_zone_table.php
+Size: 1.36 KB
+Last Modified: 08/31/2025 12:42:10
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table(
+            'zone',
+            function (Blueprint $table) {
+                if (!Schema::hasColumn('zone', 'name')) {
+                    $table->string('name')->after('id');
+                }
+                if (!Schema::hasColumn('zone', 'polygon')) {
+                    $table->geometry('polygon')->nullable()->after('name');
+                }
+                if (!Schema::hasColumn('zone', 'description')) {
+                    $table->string('description')->nullable()->after('polygon');
+                }
+                if (!Schema::hasColumn('zone', 'color')) {
+                    $table->string('color')->default('#3498db')->after('description');
+                }
+                if (!Schema::hasColumn('zone', 'is_active')) {
+                    $table->boolean('is_active')->default(true)->after('color');
+                }
+            }
+        );
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('zone', function (Blueprint $table) {
+            $table->dropColumn(['polygon', 'description', 'color', 'is_active']);
+        });
+    }
+};
+
+
+------------------------------------------------------------
+FILE: database\migrations\2025_09_01_044325_create_notifications_table.php
+Path: D:\smk_monitoring_app\database\migrations\2025_09_01_044325_create_notifications_table.php
+Size: 726 bytes
+Last Modified: 09/01/2025 11:43:25
+------------------------------------------------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('notifications');
+    }
+};
+
+
+
+================================================================================
+TOTAL FILES IN CATEGORY: 20
+================================================================================

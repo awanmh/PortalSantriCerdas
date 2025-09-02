@@ -6,23 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('catatan_pelanggaran', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('guru_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('siswa_id')->constrained('users')->onDelete('cascade');
+            $table->string('siswa'); // Input manual, bukan foreign key
+            $table->string('guru_bk'); // Input manual, bukan foreign key
             $table->text('deskripsi');
+            $table->text('tindak_lanjut')->nullable();
+            $table->string('tingkat')->default('ringan'); // ringan, sedang, berat
+            $table->date('tanggal')->default(now());
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.S
-     */
     public function down(): void
     {
         Schema::dropIfExists('catatan_pelanggaran');

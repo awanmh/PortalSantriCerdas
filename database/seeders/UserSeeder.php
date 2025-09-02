@@ -2,63 +2,71 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Kelas;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // Kosongkan tabel users sebelum seed (reset ID juga)
-        DB::table('users')->truncate();
-
-        $users = [
-            [
-                'name' => 'Admin Sekolah',
-                'email' => 'admin@smk.local',
-                'password' => 'password',
-            ],
-            [
-                'name' => 'Pak Budi (Guru)',
-                'email' => 'guru@smk.local',
-                'password' => 'password',
-            ],
-            [
-                'name' => 'Bu Sari (Guru BK)',
-                'email' => 'guru_bk@smk.local',
-                'password' => 'password',
-            ],
-            [
-                'name' => 'Andi (Siswa)',
-                'email' => 'siswa@smk.local',
-                'password' => 'password',
-            ],
-            [
-                'name' => 'Siswa 1',
-                'email' => 'siswa1@example.com',
-                'password' => 'password',
-            ],
-            [
-                'name' => 'Guru 1',
-                'email' => 'guru1@example.com',
-                'password' => 'password',
-            ],
-            [
-                'name' => 'Test User',
-                'email' => 'dummy_test@smk.local', // ganti biar gak bentrok dengan test bawaan Laravel
-                'password' => 'password',
-            ],
-        ];
-
-        foreach ($users as $u) {
-            User::create([
-                'name' => $u['name'],
-                'email' => $u['email'],
-                'password' => Hash::make($u['password']),
-                'email_verified_at' => now(),
+        // Pastikan kelas ada
+        if (Kelas::count() === 0) {
+            Kelas::create([
+                'nama_kelas' => 'XII RPL 1',
+                'jurusan' => 'Rekayasa Perangkat Lunak',
+                'wali_kelas' => 'Guru Wali'
             ]);
+        }
+
+        // Admin/IT
+        User::create([
+            'name' => 'Admin IT',
+            'email' => 'admin.it@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('it');
+
+        User::create([
+            'name' => 'Teknisi 1',
+            'email' => 'teknisi1.teknisi@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('it');
+
+        // Guru
+        User::create([
+            'name' => 'Guru Matematika',
+            'email' => 'guru1.guru@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('guru');
+
+        User::create([
+            'name' => 'Pengajar IPA',
+            'email' => 'guru2.pengajar@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('guru');
+
+        // BK
+        User::create([
+            'name' => 'BK Utama',
+            'email' => 'bk1.bk@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('bk');
+
+        User::create([
+            'name' => 'Konselor',
+            'email' => 'konseling1.konseling@gmail.com',
+            'password' => Hash::make('password'),
+        ])->assignRole('bk');
+
+        // Siswa
+        for ($i = 1; $i <= 10; $i++) {
+            User::create([
+                'name' => 'Siswa ' . $i,
+                'email' => 'siswa' . $i . '.siswa@gmail.com',
+                'password' => Hash::make('password'),
+            ])->assignRole('siswa');
         }
     }
 }

@@ -1,0 +1,186 @@
+﻿22 NOTIFICATIONS
+================================================================================
+Generated on: 2025-09-02 18:00:45
+Project Path: D:\smk_monitoring_app
+
+------------------------------------------------------------
+FILE: app\Notifications\AbsensiTerlambat.php
+Path: D:\smk_monitoring_app\app\Notifications\AbsensiTerlambat.php
+Size: 1.25 KB
+Last Modified: 09/01/2025 11:43:09
+------------------------------------------------------------
+<?php
+
+namespace App\Notifications;
+
+use App\Models\AbsensiSiswa;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\DatabaseMessage;
+use Illuminate\Notifications\Notification;
+
+class AbsensiTerlambat extends Notification implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public AbsensiSiswa $absensi) {}
+
+    public function via($notifiable)
+    {
+        return ['database', 'broadcast'];
+    }
+
+    public function toDatabase($notifiable)
+    {
+        return [
+            'title' => 'Absensi Terlambat',
+            'message' => 'Siswa ' . $this->absensi->siswa->name . ' terlambat masuk',
+            'type' => 'warning',
+            'url' => '/absensi/' . $this->absensi->id,
+            'timestamp' => now()->toIso8601String()
+        ];
+    }
+
+    public function toBroadcast($notifiable)
+    {
+        return new BroadcastMessage([
+            'title' => 'Absensi Terlambat',
+            'message' => 'Siswa ' . $this->absensi->siswa->name . ' terlambat masuk',
+            'type' => 'warning',
+            'url' => '/absensi/' . $this->absensi->id,
+            'timestamp' => now()->toIso8601String()
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Notifications\JadwalAkanDimulai.php
+Path: D:\smk_monitoring_app\app\Notifications\JadwalAkanDimulai.php
+Size: 1.14 KB
+Last Modified: 09/01/2025 11:42:43
+------------------------------------------------------------
+<?php
+
+namespace App\Notifications;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class JadwalAkanDimulai extends Notification
+{
+    use Queueable;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            //
+        ];
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Notifications\PelanggaranBaru.php
+Path: D:\smk_monitoring_app\app\Notifications\PelanggaranBaru.php
+Size: 1.14 KB
+Last Modified: 09/01/2025 11:42:41
+------------------------------------------------------------
+<?php
+
+namespace App\Notifications;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class PelanggaranBaru extends Notification
+{
+    use Queueable;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            //
+        ];
+    }
+}
+
+
+
+================================================================================
+TOTAL FILES IN CATEGORY: 3
+================================================================================

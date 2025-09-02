@@ -3,43 +3,54 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * API Login → return Sanctum token
+     * Handle an incoming authentication request.
      */
-    public function loginApi(Request $request)
+    public function store(LoginRequest $request): JsonResponse|RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        $request->authenticate();
 
-        if (!auth()->attempt($credentials)) {
-            return response()->json(['message' => 'Login gagal, cek email/password'], 401);
+        // HANYA gunakan session untuk permintaan web
+        if (!$request->wantsJson()) {
+            $request->session()->regenerate();
         }
 
-        $user = auth()->user();
-        $token = $user->createToken('api-token')->plainTextToken;
+        // Jika permintaan ingin respons JSON (API request)
+        if ($request->wantsJson()) {
+            return response()->json([
+                'token' => $request->user()->createToken('api-token')->plainTextToken
+            ]);
+        }
 
-        return response()->json([
-            'message' => 'Login berhasil',
-            'token' => $token,
-            'user' => $user
-        ]);
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
-
     /**
-     * API Logout → revoke token
+     * Destroy an authenticated session.
      */
-    public function logoutApi(Request $request)
+    public function destroy(Request $request): JsonResponse|RedirectResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        Auth::guard('web')->logout();
 
-        return response()->json(['message' => 'Logged out']);
+        // HANYA gunakan session untuk permintaan web
+        if (!$request->wantsJson()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        // Jika permintaan ingin respons JSON (API request)
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Logged out successfully']);
+        }
+
+        return redirect('/');
     }
 }

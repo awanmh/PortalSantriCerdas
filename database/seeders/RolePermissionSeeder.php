@@ -3,142 +3,91 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Artisan;
-use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolePermissionSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // reset cache (aman)
-        Artisan::call('permission:cache-reset');
+        // Buat permissions (hanya jika belum ada)
+        $permissions = [
+            // Absensi
+            'absensi-siswa-create',
+            'absensi-siswa-view',
+            'absensi-guru-create',
+            'absensi-guru-view',
+            'absensi-bk-view',
 
-        // 1) Permissions (berikan deskripsi singkat di komentar)
-        $perms = [
-            // Admin (system/tim IT)
-            'manage_users',         // create/update/delete user accounts
-            'manage_classes',       // CRUD kelas
-            'manage_zones',         // CRUD geofence/zone
-            'manage_devices',       // register/remove fingerprint devices
-            'view_audit_logs',      // lihat log audit
+            // Zona
+            'zona-manage',
+            'zona-view',
 
-            // Guru pengajar
-            'view_schedule',
-            'view_class_students',
-            'manage_attendance',    // cek / koreksi absensi kelas (terbatas)
-            'input_grades',
-            'view_reports',
+            // Pelanggaran
+            'pelanggaran-create',
+            'pelanggaran-view',
+            'pelanggaran-manage',
 
-            // Guru BK
-            'view_bk_reports',
-            'create_bk_report',
-            'update_bk_report',
-            'delete_bk_report',
-            'view_student_progress',
-            'counsel_student',
-            'manage_behavior_notes',
+            // Kelas
+            'kelas-view',
+            'kelas-manage',
 
-            // Siswa
-            'view_own_attendance',
-            'absen_web',            // mengirim konfirmasi web (login & lokasi)
-            'view_own_grades',
-            'create_consultation_request',
+            // Jadwal
+            'jadwal-view',
+            'jadwal-manage',
+
+            // User
+            'user-view',
+            'user-manage',
         ];
 
-        // Create permissions if not exist
-        foreach ($perms as $p) {
-            Permission::firstOrCreate(['name' => $p]);
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // 2) Roles
-        $roles = [
-            'admin',     // tim IT / Admin sistem
-            'guru',      // guru pengajar
-            'guru_bk',   // guru bimbingan konseling
-            'siswa',     // siswa
-        ];
+        // Buat role dan assign permissions (hanya jika belum ada)
+        $siswa = Role::firstOrCreate(['name' => 'siswa']);
+        $siswa->syncPermissions([
+            'absensi-siswa-create',
+            'absensi-siswa-view',
+            'jadwal-view',
+            'kelas-view'
+        ]);
 
-        foreach ($roles as $r) {
-            Role::firstOrCreate(['name' => $r]);
-        }
-
-        // 3) Assign permissions to roles
-        // Admin gets everything
-        $admin = Role::where('name', 'admin')->first();
-        $admin->syncPermissions(Permission::all());
-
-        // Guru (pengajar)
-        $guru = Role::where('name', 'guru')->first();
+        $guru = Role::firstOrCreate(['name' => 'guru']);
         $guru->syncPermissions([
-            'view_schedule',
-            'view_class_students',
-            'manage_attendance',
-            'input_grades',
-            'view_reports',
+            'absensi-guru-create',
+            'absensi-guru-view',
+            'absensi-siswa-view',
+            'pelanggaran-create',
+            'jadwal-view',
+            'kelas-view'
         ]);
 
-        // Guru BK
-        $bk = Role::where('name', 'guru_bk')->first();
+        $it = Role::firstOrCreate(['name' => 'it']);
+        $it->syncPermissions([
+            'zona-manage',
+            'absensi-guru-view',
+            'absensi-siswa-view',
+            'pelanggaran-view',
+            'kelas-manage',
+            'user-manage'
+        ]);
+
+        $bk = Role::firstOrCreate(['name' => 'bk']);
         $bk->syncPermissions([
-            'view_bk_reports',
-            'create_bk_report',
-            'update_bk_report',
-            'delete_bk_report',
-            'view_student_progress',
-            'counsel_student',
-            'manage_behavior_notes',
+            'pelanggaran-view',
+            'pelanggaran-manage',
+            'absensi-siswa-view',
+            'absensi-guru-view',
+            'jadwal-view',
+            'kelas-view'
         ]);
 
-        // Siswa
-        $siswaRole = Role::where('name', 'siswa')->first();
-        $siswaRole->syncPermissions([
-            'view_own_attendance',
-            'absen_web',
-            'view_own_grades',
-            'create_consultation_request',
-        ]);
-
-        // 4) Create sample users (only if not exist) and assign roles
-        $adminUser = User::firstOrCreate(
-            ['email' => 'admin@smk.local'],
-            [
-                'name' => 'Admin Sekolah',
-                'password' => Hash::make('Admin@12345'),
-            ]
-        );
-        $adminUser->assignRole('admin');
-
-        $guruUser = User::firstOrCreate(
-            ['email' => 'guru@smk.local'],
-            [
-                'name' => 'Pak Budi (Guru)',
-                'password' => Hash::make('Guru@12345'),
-            ]
-        );
-        $guruUser->assignRole('guru');
-
-        $bkUser = User::firstOrCreate(
-            ['email' => 'guru_bk@smk.local'],
-            [
-                'name' => 'Bu Sari (Guru BK)',
-                'password' => Hash::make('Bk@12345'),
-            ]
-        );
-        $bkUser->assignRole('guru_bk');
-
-        $siswaUser = User::firstOrCreate(
-            ['email' => 'siswa@smk.local'],
-            [
-                'name' => 'Andi (Siswa)',
-                'password' => Hash::make('Siswa@12345'),
-            ]
-        );
-        $siswaUser->assignRole('siswa');
-
-        // reset permission cache to apply assignments
-        Artisan::call('permission:cache-reset');
+        // Assign role default ke user admin (hanya jika belum memiliki role)
+        $user = \App\Models\User::first();
+        if ($user && !$user->hasRole(['siswa', 'guru', 'it', 'bk'])) {
+            $user->assignRole('it');
+        }
     }
 }

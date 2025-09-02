@@ -1,0 +1,367 @@
+﻿LARAVEL PROJECT STRUCTURE ANALYSIS
+Generated on: 2025-09-02 18:00:45
+Project Path: D:\smk_monitoring_app
+Output Path: D:\smk_monitoring_app\Laravel_Analysis_Export
+
+================================================================================
+
+
+COMPLETE PROJECT STRUCTURE
+
+--------------------------------------------------
+
+📄 .editorconfig (258 bytes)
+📄 .env (1.68 KB)
+📄 .env.example (1.06 KB)
+📄 .gitattributes (186 bytes)
+📄 .gitignore (331 bytes)
+📁 .qodo/
+📄 .editorconfig (258 bytes)
+📄 .env (1.68 KB)
+📄 .env.example (1.06 KB)
+📄 .gitattributes (186 bytes)
+📄 .gitignore (331 bytes)
+📁 .qodo/
+📁 app/
+  📁 Events/
+    📄 AbsensiTerlambatEvent.php (997 bytes)
+  📁 Http/
+    📁 Controllers/
+      📄 AbsensiGuruController.php (987 bytes)
+      📄 AbsensiSiswaController.php (3.32 KB)
+      📁 Api/
+        📄 AbsensiGuruController.php (5.23 KB)
+        📄 AbsensiSiswaController.php (2.73 KB)
+        📄 CatatanPelanggaranController.php (3.86 KB)
+        📄 DashboardController.php (7.82 KB)
+        📄 JadwalController.php (1.93 KB)
+        📄 NotificationController.php (1.22 KB)
+        📄 ZonaController.php (2.44 KB)
+      📁 Auth/
+        📄 AuthenticatedSessionController.php (1.55 KB)
+        📄 ConfirmablePasswordController.php (1.03 KB)
+        📄 EmailVerificationNotificationController.php (662 bytes)
+        📄 EmailVerificationPromptController.php (628 bytes)
+        📄 NewPasswordController.php (1.71 KB)
+        📄 PasswordController.php (734 bytes)
+        📄 PasswordResetLinkController.php (1.13 KB)
+        📄 RegisteredUserController.php (2.34 KB)
+        📄 VerifyEmailController.php (854 bytes)
+      📄 CatatanPelanggaranController.php (1.46 KB)
+      📄 Controller.php (77 bytes)
+      📄 JadwalController.php (1.76 KB)
+      📄 ProfileController.php (1.48 KB)
+    📄 Kernel.php (2.29 KB)
+    📁 Middleware/
+      📄 EnsureEmailIsVerified.php (739 bytes)
+      📄 HandleInertiaRequests.php (780 bytes)
+    📁 Requests/
+      📁 Auth/
+        📄 LoginRequest.php (2.18 KB)
+      📄 ProfileUpdateRequest.php (743 bytes)
+  📁 Models/
+    📄 AbsensiGuru.php (567 bytes)
+    📄 AbsensiSiswa.php (781 bytes)
+    📄 CatatanPelanggaran.php (375 bytes)
+    📄 Jadwal.php (305 bytes)
+    📄 Jurusan.php (424 bytes)
+    📄 Kelas.php (905 bytes)
+    📄 Siswa.php (368 bytes)
+    📄 User.php (1.15 KB)
+    📄 Zona.php (371 bytes)
+  📁 Notifications/
+    📄 AbsensiTerlambat.php (1.25 KB)
+    📄 JadwalAkanDimulai.php (1.14 KB)
+    📄 PelanggaranBaru.php (1.14 KB)
+  📁 Providers/
+    📄 AppServiceProvider.php (769 bytes)
+    📄 RouteServiceProvider.php (1.26 KB)
+    📄 TelescopeServiceProvider.php (1.60 KB)
+📄 artisan (425 bytes)
+📁 bootstrap/
+  📄 app.php (743 bytes)
+  📁 cache/
+    📄 .gitignore (14 bytes)
+    📄 packages.php (2.58 KB)
+    📄 services.php (22.56 KB)
+  📄 providers.php (169 bytes)
+📄 composer.json (2.80 KB)
+📄 composer.lock (383.98 KB)
+📁 config/
+  📄 app.php (4.17 KB)
+  📄 auth.php (4.05 KB)
+  📄 broadcasting.php (2.62 KB)
+  📄 cache.php (3.40 KB)
+  📄 cors.php (859 bytes)
+  📄 database.php (6.12 KB)
+  📄 filesystems.php (2.44 KB)
+  📄 logging.php (4.23 KB)
+  📄 mail.php (3.53 KB)
+  📄 permission.php (6.89 KB)
+  📄 queue.php (3.73 KB)
+  📄 reverb.php (3.32 KB)
+  📄 sanctum.php (1.82 KB)
+  📄 services.php (1.01 KB)
+  📄 session.php (7.66 KB)
+  📄 telescope.php (6.68 KB)
+📁 database/
+  📄 .gitignore (10 bytes)
+  📄 database.sqlite (0 bytes)
+  📁 factories/
+    📄 UserFactory.php (1.05 KB)
+  📁 migrations/
+    📄 0001_01_01_000000_create_users_table.php (1.44 KB)
+    📄 0001_01_01_000001_create_cache_table.php (849 bytes)
+    📄 0001_01_01_000002_create_jobs_table.php (1.77 KB)
+    📄 2025_08_11_062459_create_permission_tables.php (6.39 KB)
+    📄 2025_08_12_072814_create_catatan_pelanggaran_table.php (840 bytes)
+    📄 2025_08_12_145226_create_kelas_table.php (893 bytes)
+    📄 2025_08_12_145233_create_jurusan_table.php (567 bytes)
+    📄 2025_08_12_145241_create_jadwal_table.php (742 bytes)
+    📄 2025_08_14_112328_create_zone_table.php (686 bytes)
+    📄 2025_08_14_112418_create_absensi_siswa_table.php (1.23 KB)
+    📄 2025_08_14_113907_create_absensi_guru_table.php (954 bytes)
+    📄 2025_08_14_113951_add_wali_kelas_to_kelas_table.php (530 bytes)
+    📄 2025_08_14_114602_create_kelas_user_table.php (718 bytes)
+    📄 2025_08_14_114724_create_bk_followup_table.php (539 bytes)
+    📄 2025_08_23_101404_add_location_to_absensi_tables.php (854 bytes)
+    📄 2025_08_23_102858_create_personal_access_tokens_table.php (863 bytes)
+    📄 2025_08_26_174819_create_telescope_entries_table.php (2.02 KB)
+    📄 2025_08_27_092603_create_siswa_table.php (808 bytes)
+    📄 2025_08_29_114542_add_columns_to_zone_table.php (1.36 KB)
+    📄 2025_09_01_044325_create_notifications_table.php (726 bytes)
+  📁 seeders/
+    📄 AbsensiSeeder.php (1.03 KB)
+    📄 DatabaseSeeder.php (625 bytes)
+    📄 JadwalSeeder.php (4.61 KB)
+    📄 JurusanSeeder.php (357 bytes)
+    📄 KelasSeeder.php (476 bytes)
+    📄 RolePermissionSeeder.php (2.39 KB)
+    📄 UserSeeder.php (1.95 KB)
+    📄 ZonaSeeder.php (924 bytes)
+📄 dummy.jpg (70 bytes)
+📄 jsconfig.json (223 bytes)
+📁 Laravel_Analysis_Export/
+📄 .editorconfig (258 bytes)
+📄 .env (1.68 KB)
+📄 .env.example (1.06 KB)
+📄 .gitattributes (186 bytes)
+📄 .gitignore (331 bytes)
+📁 .qodo/
+📄 .editorconfig (258 bytes)
+📄 .env (1.68 KB)
+📄 .env.example (1.06 KB)
+📄 .gitattributes (186 bytes)
+📄 .gitignore (331 bytes)
+📁 .qodo/
+📁 app/
+  📁 Events/
+    📄 AbsensiTerlambatEvent.php (997 bytes)
+  📁 Http/
+    📁 Controllers/
+      📄 AbsensiGuruController.php (987 bytes)
+      📄 AbsensiSiswaController.php (3.32 KB)
+      📁 Api/
+        📄 AbsensiGuruController.php (5.23 KB)
+        📄 AbsensiSiswaController.php (2.73 KB)
+        📄 CatatanPelanggaranController.php (3.86 KB)
+        📄 DashboardController.php (7.82 KB)
+        📄 JadwalController.php (1.93 KB)
+        📄 NotificationController.php (1.22 KB)
+        📄 ZonaController.php (2.44 KB)
+      📁 Auth/
+        📄 AuthenticatedSessionController.php (1.55 KB)
+        📄 ConfirmablePasswordController.php (1.03 KB)
+        📄 EmailVerificationNotificationController.php (662 bytes)
+        📄 EmailVerificationPromptController.php (628 bytes)
+        📄 NewPasswordController.php (1.71 KB)
+        📄 PasswordController.php (734 bytes)
+        📄 PasswordResetLinkController.php (1.13 KB)
+        📄 RegisteredUserController.php (2.34 KB)
+        📄 VerifyEmailController.php (854 bytes)
+      📄 CatatanPelanggaranController.php (1.46 KB)
+      📄 Controller.php (77 bytes)
+      📄 JadwalController.php (1.76 KB)
+      📄 ProfileController.php (1.48 KB)
+    📄 Kernel.php (2.29 KB)
+    📁 Middleware/
+      📄 EnsureEmailIsVerified.php (739 bytes)
+      📄 HandleInertiaRequests.php (780 bytes)
+    📁 Requests/
+      📁 Auth/
+        📄 LoginRequest.php (2.18 KB)
+      📄 ProfileUpdateRequest.php (743 bytes)
+  📁 Models/
+    📄 AbsensiGuru.php (567 bytes)
+    📄 AbsensiSiswa.php (781 bytes)
+    📄 CatatanPelanggaran.php (375 bytes)
+    📄 Jadwal.php (305 bytes)
+    📄 Jurusan.php (424 bytes)
+    📄 Kelas.php (905 bytes)
+    📄 Siswa.php (368 bytes)
+    📄 User.php (1.15 KB)
+    📄 Zona.php (371 bytes)
+  📁 Notifications/
+    📄 AbsensiTerlambat.php (1.25 KB)
+    📄 JadwalAkanDimulai.php (1.14 KB)
+    📄 PelanggaranBaru.php (1.14 KB)
+  📁 Providers/
+    📄 AppServiceProvider.php (769 bytes)
+    📄 RouteServiceProvider.php (1.26 KB)
+    📄 TelescopeServiceProvider.php (1.60 KB)
+📄 artisan (425 bytes)
+📁 bootstrap/
+  📄 app.php (743 bytes)
+  📁 cache/
+    📄 .gitignore (14 bytes)
+    📄 packages.php (2.58 KB)
+    📄 services.php (22.56 KB)
+  📄 providers.php (169 bytes)
+📄 composer.json (2.80 KB)
+📄 composer.lock (383.98 KB)
+📁 config/
+  📄 app.php (4.17 KB)
+  📄 auth.php (4.05 KB)
+  📄 broadcasting.php (2.62 KB)
+  📄 cache.php (3.40 KB)
+  📄 cors.php (859 bytes)
+  📄 database.php (6.12 KB)
+  📄 filesystems.php (2.44 KB)
+  📄 logging.php (4.23 KB)
+  📄 mail.php (3.53 KB)
+  📄 permission.php (6.89 KB)
+  📄 queue.php (3.73 KB)
+  📄 reverb.php (3.32 KB)
+  📄 sanctum.php (1.82 KB)
+  📄 services.php (1.01 KB)
+  📄 session.php (7.66 KB)
+  📄 telescope.php (6.68 KB)
+📁 database/
+  📄 .gitignore (10 bytes)
+  📄 database.sqlite (0 bytes)
+  📁 factories/
+    📄 UserFactory.php (1.05 KB)
+  📁 migrations/
+    📄 0001_01_01_000000_create_users_table.php (1.44 KB)
+    📄 0001_01_01_000001_create_cache_table.php (849 bytes)
+    📄 0001_01_01_000002_create_jobs_table.php (1.77 KB)
+    📄 2025_08_11_062459_create_permission_tables.php (6.39 KB)
+    📄 2025_08_12_072814_create_catatan_pelanggaran_table.php (840 bytes)
+    📄 2025_08_12_145226_create_kelas_table.php (893 bytes)
+    📄 2025_08_12_145233_create_jurusan_table.php (567 bytes)
+    📄 2025_08_12_145241_create_jadwal_table.php (742 bytes)
+    📄 2025_08_14_112328_create_zone_table.php (686 bytes)
+    📄 2025_08_14_112418_create_absensi_siswa_table.php (1.23 KB)
+    📄 2025_08_14_113907_create_absensi_guru_table.php (954 bytes)
+    📄 2025_08_14_113951_add_wali_kelas_to_kelas_table.php (530 bytes)
+    📄 2025_08_14_114602_create_kelas_user_table.php (718 bytes)
+    📄 2025_08_14_114724_create_bk_followup_table.php (539 bytes)
+    📄 2025_08_23_101404_add_location_to_absensi_tables.php (854 bytes)
+    📄 2025_08_23_102858_create_personal_access_tokens_table.php (863 bytes)
+    📄 2025_08_26_174819_create_telescope_entries_table.php (2.02 KB)
+    📄 2025_08_27_092603_create_siswa_table.php (808 bytes)
+    📄 2025_08_29_114542_add_columns_to_zone_table.php (1.36 KB)
+    📄 2025_09_01_044325_create_notifications_table.php (726 bytes)
+  📁 seeders/
+    📄 AbsensiSeeder.php (1.03 KB)
+    📄 DatabaseSeeder.php (625 bytes)
+    📄 JadwalSeeder.php (4.61 KB)
+    📄 JurusanSeeder.php (357 bytes)
+    📄 KelasSeeder.php (476 bytes)
+    📄 RolePermissionSeeder.php (2.39 KB)
+    📄 UserSeeder.php (1.95 KB)
+    📄 ZonaSeeder.php (924 bytes)
+📄 dummy.jpg (70 bytes)
+📄 jsconfig.json (223 bytes)
+📁 Laravel_Analysis_Export/
+📄 package.json (817 bytes)
+📄 package-lock.json (5.60 KB)
+📄 phpunit.xml (1.20 KB)
+📄 project_dump.txt (70.37 MB)
+📁 public/
+  📄 .htaccess (740 bytes)
+  📄 favicon.ico (0 bytes)
+  📄 index.php (543 bytes)
+  📄 robots.txt (24 bytes)
+  📁 storage/
+    📄 .gitignore (14 bytes)
+📄 README.md (2.55 KB)
+📁 resources/
+  📁 js/
+    📄 echo.js (458 bytes)
+  📁 views/
+    📄 .gitkeep (2 bytes)
+    📄 app.blade.php (700 bytes)
+📁 routes/
+  📄 api.php (3.59 KB)
+  📄 auth.php (1.34 KB)
+  📄 channels.php (471 bytes)
+  📄 console.php (210 bytes)
+  📄 web.php (154 bytes)
+📁 storage/
+  📁 app/
+    📄 .gitignore (33 bytes)
+    📁 private/
+      📄 .gitignore (14 bytes)
+    📁 public/
+      📄 .gitignore (14 bytes)
+  📁 debugbar/
+    📄 .gitignore (14 bytes)
+    📄 01K42DXGHH9MRRCJ6KF3JBPZZK.json (63.83 KB)
+    📄 01K42EB7W7KPHXMRS7TFC74RFE.json (63.58 KB)
+    📄 01K42EECBREQQYVJ7DY9EWQ0PV.json (63.57 KB)
+    📄 01K42ERC11NY1W9P451M9Y0T7T.json (20.48 KB)
+    📄 01K42EX6RVA862TDJCCW8HY6C0.json (20.50 KB)
+    📄 01K42EX74NXAX4YFPEV6K8BCPR.json (108.93 KB)
+    📄 01K42EXDKKEV9JDHJC9QJANB9H.json (20.25 KB)
+    📄 01K42EXDYNR1XE1E5VFW6EP0YN.json (108.94 KB)
+    📄 01K42F2C8NB1AJ5YTV2T3D1367.json (20.48 KB)
+    📄 01K42F2CMSCFZX199PZEX8AWM8.json (108.95 KB)
+    📄 01K42FRDHFSMVMJ7TDCR799V94.json (20.52 KB)
+    📄 01K42FRE0T6433N9BP45TTR0TG.json (108.94 KB)
+    📄 01K42G7KRY61NMYR8Z7QAM4EZC.json (20.51 KB)
+    📄 01K42G7M4YWRR1M11FC5CPY6AH.json (108.92 KB)
+    📄 01K44V30AC95Q3CT2VG69891WG.json (20.75 KB)
+    📄 01K44V315BM3R4G9A66WQ39YTA.json (109.18 KB)
+    📄 01K44VB7VC7HVHVHYFJE9V902H.json (20.50 KB)
+    📄 01K44VB8FKRNKGNEFZ8BTP15D4.json (108.92 KB)
+    📄 01K44WWVXHZ5KFPQF9G6VF24G3.json (20.49 KB)
+    📄 01K44WWWBCWHR9S2V79C3YGEES.json (108.90 KB)
+    📄 01K44X2DWMNXQS2T6QD5MCJBSE.json (20.50 KB)
+    📄 01K44X2E8RDKCQKH1S62ZTPMTD.json (108.94 KB)
+    📄 01K44XE51QPXTXFJM4C8EFZDZ0.json (20.50 KB)
+    📄 01K44XE5F78ZM8YF75XSZZSAXV.json (108.95 KB)
+    📄 01K44XKCF3TTS34FXVX7YHD6Q6.json (20.48 KB)
+    📄 01K44XKD4C02NSH3YZX1WCYKBZ.json (108.94 KB)
+    📄 01K44XS4ZMJYMHJJ0R9NMR3DXR.json (20.47 KB)
+    📄 01K44XS5VVNF9YWMH3NZJEZXNH.json (108.93 KB)
+  📁 framework/
+    📄 .gitignore (119 bytes)
+    📁 cache/
+      📄 .gitignore (21 bytes)
+      📁 data/
+        📄 .gitignore (14 bytes)
+    📁 sessions/
+      📄 .gitignore (14 bytes)
+    📁 testing/
+      📄 .gitignore (14 bytes)
+    📁 views/
+      📄 .gitignore (14 bytes)
+  📁 logs/
+    📄 .gitignore (14 bytes)
+    📄 laravel.log (2.26 MB)
+📄 struktur.txt (1.13 MB)
+📁 tests/
+  📁 Feature/
+    📁 Auth/
+      📄 AuthenticationTest.php (1.05 KB)
+      📄 EmailVerificationTest.php (1.36 KB)
+      📄 PasswordResetTest.php (1.30 KB)
+      📄 PasswordUpdateTest.php (1.36 KB)
+      📄 RegistrationTest.php (551 bytes)
+    📄 ExampleTest.php (359 bytes)
+    📄 ProfileTest.php (2.42 KB)
+  📄 TestCase.php (142 bytes)
+  📁 Unit/
+    📄 ExampleTest.php (243 bytes)
+

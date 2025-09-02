@@ -1,23 +1,28 @@
 {
-    "$schema": "https://json.schemastore.org/package.json",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite"
-    },
-    "devDependencies": {
-        "@inertiajs/vue3": "^2.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@tailwindcss/vite": "^4.0.0",
-        "@vitejs/plugin-vue": "^5.0.0",
-        "autoprefixer": "^10.4.12",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.2.1",
-        "vite": "^7.0.4",
-        "vue": "^3.4.0"
-    }
+  "name": "smk_monitoring_app",
+  "version": "1.0.0",
+  "description": "Aplikasi monitoring kegiatan di SMK, mencakup: - Absensi siswa & guru (GPS + foto) - Jadwal pelajaran - Catatan pelanggaran siswa - Manajemen user (Admin, Guru, Guru BK, Siswa)",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awanmh/PortalSantriCerdas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/awanmh/PortalSantriCerdas/issues"
+  },
+  "homepage": "https://github.com/awanmh/PortalSantriCerdas#readme",
+  "devDependencies": {
+    "laravel-echo": "^2.2.0",
+    "pusher-js": "^8.4.0"
+  }
 }

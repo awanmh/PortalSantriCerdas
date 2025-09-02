@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Vite;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::prefetch(concurrency: 3);
+        // Custom URL reset password agar diarahkan ke frontend
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            $frontendUrl = config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:3000'));
+            return "{$frontendUrl}/password-reset/{$token}?email={$notifiable->getEmailForPasswordReset()}";
+        });
     }
 }

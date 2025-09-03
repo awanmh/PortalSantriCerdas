@@ -1,0 +1,53 @@
+﻿LARAVEL PROJECT EXTRACTION SUMMARY
+================================================================================
+Generated on: 2025-09-02 18:00:55
+Project Path: D:\smk_monitoring_app
+Output Path: D:\smk_monitoring_app\Laravel_Analysis_Export
+
+EXTRACTION STATISTICS
+--------------------------------------------------
+Total Output Files: 17
+Total Output Size: 964.35 KB
+
+FILES GENERATED
+--------------------------------------------------📄 01_Project_Structure.txt - 13.30 KB
+📄 02_Configuration_Files.txt - 392.45 KB
+📄 03_Routes.txt - 7.27 KB
+📄 04_Controllers.txt - 103.51 KB
+📄 05_Models.txt - 84.89 KB
+📄 06_Migrations.txt - 31.58 KB
+📄 07_Seeders.txt - 16.15 KB
+📄 08_Middleware.txt - 2.42 KB
+📄 09_Requests.txt - 7.29 KB
+📄 10_Providers.txt - 4.80 KB
+📄 11_Config_Files.txt - 66.71 KB
+📄 12_Views_Blade.txt - 2.25 KB
+📄 13_JavaScript_Files.txt - 1.74 KB
+📄 17_Tests.txt - 11.56 KB
+📄 20_Events_Listeners.txt - 1.61 KB
+📄 22_Notifications.txt - 4.71 KB
+📄 27_Other_PHP_Files.txt - 212.10 KB
+
+HOW TO USE THESE FILES FOR AI ANALYSIS
+--------------------------------------------------
+1. Start with '00_SUMMARY_AND_INDEX.txt' (this file) for overview
+2. Review '01_Project_Structure.txt' to understand the project layout
+3. Examine configuration files in '02_Configuration_Files.txt'
+4. Analyze the core application files in order (Routes → Controllers → Models)
+5. Review database structure in Migrations and Seeders
+6. Check frontend files (Views, JS, CSS)
+7. Examine additional components (Middleware, Requests, etc.)
+
+TIPS FOR AI ANALYSIS
+--------------------------------------------------
+- Each file contains complete source code with file paths
+- Files are organized by Laravel component type
+- Use the structure file to understand relationships
+- Configuration files contain environment and dependency info
+- All files are UTF-8 encoded for proper display
+
+PROJECT INFORMATION
+--------------------------------------------------
+Laravel Project: smk_monitoring_app
+Extracted: 2025-09-02 18:00:55
+Total Categories: 26

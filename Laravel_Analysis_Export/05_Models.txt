@@ -1,0 +1,3119 @@
+﻿05 MODELS
+================================================================================
+Generated on: 2025-09-02 18:00:53
+Project Path: D:\smk_monitoring_app
+
+------------------------------------------------------------
+FILE: app\Models\AbsensiGuru.php
+Path: D:\smk_monitoring_app\app\Models\AbsensiGuru.php
+Size: 567 bytes
+Last Modified: 09/01/2025 08:49:47
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AbsensiGuru extends Model
+{
+    protected $table = 'absensi_guru';
+
+    // Pastikan semua kolom yang tidak boleh null ada di fillable
+    protected $fillable = [
+        'guru_id',
+        'tanggal',
+        'jam_masuk',
+        'jam_keluar',
+        'status',
+        'keterangan',
+        'latitude',
+        'longitude'
+    ];
+
+    protected $casts = [
+        'tanggal' => 'date',
+    ];
+
+    public function guru()
+    {
+        return $this->belongsTo(User::class, 'guru_id');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\AbsensiSiswa.php
+Path: D:\smk_monitoring_app\app\Models\AbsensiSiswa.php
+Size: 781 bytes
+Last Modified: 08/22/2025 17:19:26
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AbsensiSiswa extends Model
+{
+    protected $table = 'absensi_siswa';
+
+    protected $fillable = [
+        'siswa_id',
+        'jadwal_id',
+        'waktu',
+        'foto_path',
+        'lat',
+        'lng',
+        'valid_zona',
+        'device_info',
+        'keterangan',
+    ];
+
+    protected $casts = [
+        'waktu' => 'datetime',
+        'device_info' => 'array',
+        'valid_zona' => 'boolean',
+    ];
+
+    /**
+     * Relasi ke siswa (User)
+     */
+    public function siswa()
+    {
+        return $this->belongsTo(User::class, 'siswa_id');
+    }
+
+    /**
+     * Relasi ke jadwal
+     */
+    public function jadwal()
+    {
+        return $this->belongsTo(Jadwal::class, 'jadwal_id');
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Models\CatatanPelanggaran.php
+Path: D:\smk_monitoring_app\app\Models\CatatanPelanggaran.php
+Size: 375 bytes
+Last Modified: 09/01/2025 09:31:44
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CatatanPelanggaran extends Model
+{
+    protected $table = 'catatan_pelanggaran';
+
+    protected $fillable = [
+        'siswa',
+        'guru_bk',
+        'deskripsi',
+        'tindak_lanjut',
+        'tingkat',
+        'tanggal'
+    ];
+
+    protected $casts = [
+        'tanggal' => 'date'
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\Jadwal.php
+Path: D:\smk_monitoring_app\app\Models\Jadwal.php
+Size: 305 bytes
+Last Modified: 09/01/2025 09:33:08
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Jadwal extends Model
+{
+    protected $table = 'jadwal';
+
+    protected $fillable = [
+        'guru',
+        'kelas',
+        'mata_pelajaran',
+        'hari',
+        'jam_mulai',
+        'jam_selesai',
+        'ruang'
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\Jurusan.php
+Path: D:\smk_monitoring_app\app\Models\Jurusan.php
+Size: 424 bytes
+Last Modified: 08/22/2025 17:15:27
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Jurusan extends Model
+{
+    use HasFactory;
+
+    protected $table = 'jurusan';
+    protected $fillable = ['nama'];
+
+    // 🔗 Relasi ke kelas
+    public function kelas(): HasMany
+    {
+        return $this->hasMany(Kelas::class);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Models\Kelas.php
+Path: D:\smk_monitoring_app\app\Models\Kelas.php
+Size: 905 bytes
+Last Modified: 08/22/2025 17:15:15
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Kelas extends Model
+{
+    use HasFactory;
+
+    protected $table = 'kelas'; 
+    protected $fillable = ['nama', 'tingkat'];
+
+    // 🔗 Relasi ke jurusan (1 kelas punya 1 jurusan)
+    public function jurusan(): BelongsTo
+    {
+        return $this->belongsTo(Jurusan::class);
+    }
+
+    // 🔗 Relasi ke user (siswa/guru)
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'kelas_user')
+                    ->withTimestamps();
+    }
+
+    // 🔗 Relasi ke jadwal
+    public function jadwal(): HasMany
+    {
+        return $this->hasMany(Jadwal::class);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Models\Siswa.php
+Path: D:\smk_monitoring_app\app\Models\Siswa.php
+Size: 368 bytes
+Last Modified: 08/27/2025 16:27:24
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Siswa extends Model
+{
+    protected $table = 'siswa'; // Tambahkan ini (tanpa "s")
+
+    protected $fillable = [
+        'user_id',
+        'nis',
+        'nama',
+        'kelas',
+        'jurusan'
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\User.php
+Path: D:\smk_monitoring_app\app\Models\User.php
+Size: 1.15 KB
+Last Modified: 09/02/2025 17:15:22
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role_keyword' // tambahkan field ini
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    /**
+     * Relasi dengan kelas (hanya untuk siswa)
+     */
+    public function kelas()
+    {
+        return $this->belongsToMany(Kelas::class, 'kelas_user');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\Zona.php
+Path: D:\smk_monitoring_app\app\Models\Zona.php
+Size: 371 bytes
+Last Modified: 09/02/2025 17:45:45
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Zona extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'nama',
+        'latitude',
+        'longitude',
+        'radius',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Events\AbsensiTerlambatEvent.php
+Path: D:\smk_monitoring_app\app\Events\AbsensiTerlambatEvent.php
+Size: 997 bytes
+Last Modified: 09/01/2025 13:56:05
+------------------------------------------------------------
+<?php
+
+namespace App\Events;
+
+use App\Models\AbsensiSiswa;
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class AbsensiTerlambatEvent implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function __construct(public AbsensiSiswa $absensi) {}
+
+    public function broadcastOn()
+    {
+        return new PrivateChannel('absensi.terlambat.' . $this->absensi->siswa_id);
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'title' => 'Absensi Terlambat',
+            'message' => 'Siswa ' . $this->absensi->siswa->name . ' terlambat masuk',
+            'type' => 'warning',
+            'url' => '/absensi/' . $this->absensi->id,
+            'timestamp' => now()->toIso8601String()
+        ];
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\AbsensiGuruController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\AbsensiGuruController.php
+Size: 5.23 KB
+Last Modified: 09/02/2025 17:26:48
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\AbsensiGuru;
+use App\Models\Zona;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+
+class AbsensiGuruController extends Controller
+{
+    /**
+     * Absensi masuk guru
+     */
+    public function absenMasuk(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Ambil zona absensi yang aktif
+        $zona = Zona::where('is_active', true)->first();
+
+        if (!$zona) {
+            return response()->json([
+                'message' => 'Zona absensi belum diatur oleh tim IT'
+            ], 400);
+        }
+
+        // Hitung jarak
+        $distance = $this->calculateDistance(
+            $request->latitude,
+            $request->longitude,
+            $zona->latitude,
+            $zona->longitude
+        );
+
+        // Cek radius
+        if ($distance > $zona->radius) {
+            return response()->json([
+                'message' => 'Anda berada di luar radius absensi',
+                'distance' => round($distance, 2),
+                'radius' => $zona->radius
+            ], 403);
+        }
+
+        // Cek apakah sudah absen masuk hari ini
+        $absensiHariIni = AbsensiGuru::where('user_id', Auth::id())
+            ->whereDate('tanggal', now()->format('Y-m-d'))
+            ->first();
+
+        if ($absensiHariIni && $absensiHariIni->jam_masuk) {
+            return response()->json([
+                'message' => 'Anda sudah melakukan absensi masuk hari ini'
+            ], 400);
+        }
+
+        // Buat atau update absensi
+        if ($absensiHariIni) {
+            $absensiHariIni->update([
+                'jam_masuk' => now(),
+                'latitude_masuk' => $request->latitude,
+                'longitude_masuk' => $request->longitude
+            ]);
+            $absensi = $absensiHariIni;
+        } else {
+            $absensi = AbsensiGuru::create([
+                'user_id' => Auth::id(),
+                'tanggal' => now()->format('Y-m-d'),
+                'jam_masuk' => now(),
+                'latitude_masuk' => $request->latitude,
+                'longitude_masuk' => $request->longitude
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Absensi masuk berhasil',
+            'data' => $absensi
+        ]);
+    }
+
+    /**
+     * Absensi pulang guru
+     */
+    public function absenPulang(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Ambil zona absensi yang aktif
+        $zona = Zona::where('is_active', true)->first();
+
+        if (!$zona) {
+            return response()->json([
+                'message' => 'Zona absensi belum diatur oleh tim IT'
+            ], 400);
+        }
+
+        // Hitung jarak
+        $distance = $this->calculateDistance(
+            $request->latitude,
+            $request->longitude,
+            $zona->latitude,
+            $zona->longitude
+        );
+
+        // Cek radius
+        if ($distance > $zona->radius) {
+            return response()->json([
+                'message' => 'Anda berada di luar radius absensi',
+                'distance' => round($distance, 2),
+                'radius' => $zona->radius
+            ], 403);
+        }
+
+        // Cek absensi hari ini
+        $absensiHariIni = AbsensiGuru::where('user_id', Auth::id())
+            ->whereDate('tanggal', now()->format('Y-m-d'))
+            ->first();
+
+        if (!$absensiHariIni || !$absensiHariIni->jam_masuk) {
+            return response()->json([
+                'message' => 'Anda belum melakukan absensi masuk hari ini'
+            ], 400);
+        }
+
+        if ($absensiHariIni->jam_pulang) {
+            return response()->json([
+                'message' => 'Anda sudah melakukan absensi pulang hari ini'
+            ], 400);
+        }
+
+        // Update absensi pulang
+        $absensiHariIni->update([
+            'jam_pulang' => now(),
+            'latitude_pulang' => $request->latitude,
+            'longitude_pulang' => $request->longitude
+        ]);
+
+        return response()->json([
+            'message' => 'Absensi pulang berhasil',
+            'data' => $absensiHariIni
+        ]);
+    }
+
+    /**
+     * Hitung jarak antara dua titik koordinat
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // km
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c;
+
+        return $distance * 1000; // meter
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\AbsensiSiswaController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\AbsensiSiswaController.php
+Size: 2.73 KB
+Last Modified: 09/02/2025 17:26:25
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\AbsensiSiswa;
+use App\Models\Zona;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+
+class AbsensiSiswaController extends Controller
+{
+    /**
+     * Absensi siswa dengan foto dan lokasi
+     */
+    public function absenSiswa(Request $request)
+    {
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Ambil zona absensi yang aktif
+        $zona = Zona::where('is_active', true)->first();
+
+        if (!$zona) {
+            return response()->json([
+                'message' => 'Zona absensi belum diatur oleh tim IT'
+            ], 400);
+        }
+
+        // Hitung jarak dari koordinat user ke pusat zona
+        $distance = $this->calculateDistance(
+            $request->latitude,
+            $request->longitude,
+            $zona->latitude,
+            $zona->longitude
+        );
+
+        // Cek apakah dalam radius
+        if ($distance > $zona->radius) {
+            return response()->json([
+                'message' => 'Anda berada di luar radius absensi',
+                'distance' => round($distance, 2),
+                'radius' => $zona->radius
+            ], 403);
+        }
+
+        // Simpan foto
+        $fotoPath = $request->file('foto')->store('absensi/siswa', 'public');
+
+        // Simpan absensi
+        $absensi = AbsensiSiswa::create([
+            'user_id' => Auth::id(),
+            'tanggal' => now()->format('Y-m-d'),
+            'jam_masuk' => now(),
+            'foto' => $fotoPath,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'status' => 'hadir'
+        ]);
+
+        return response()->json([
+            'message' => 'Absensi berhasil',
+            'data' => $absensi
+        ]);
+    }
+
+    /**
+     * Hitung jarak antara dua titik koordinat
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // km
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c;
+
+        return $distance * 1000; // meter
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\CatatanPelanggaranController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\CatatanPelanggaranController.php
+Size: 3.86 KB
+Last Modified: 09/02/2025 17:27:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\CatatanPelanggaran;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+
+class CatatanPelanggaranController extends Controller
+{
+    /**
+     * Tampilkan semua catatan pelanggaran
+     */
+    public function index(Request $request)
+    {
+        $query = CatatanPelanggaran::with('siswa');
+
+        // Filter berdasarkan kelas jika role guru
+        if (Auth::user()->hasRole('guru')) {
+            $kelasId = $request->query('kelas_id');
+            if ($kelasId) {
+                $siswaIds = User::whereHas('kelas', function ($query) use ($kelasId) {
+                    $query->where('kelas_id', $kelasId);
+                })->pluck('id');
+
+                $query->whereIn('user_id', $siswaIds);
+            }
+        }
+
+        // Filter berdasarkan tanggal
+        if ($request->has('tanggal')) {
+            $query->whereDate('tanggal', $request->tanggal);
+        }
+
+        $catatan = $query->orderBy('tanggal', 'desc')->paginate(10);
+
+        return response()->json($catatan);
+    }
+
+    /**
+     * Tambah catatan pelanggaran baru
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'tanggal' => 'required|date',
+            'jenis_pelanggaran' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+            'tingkat_keparahan' => 'required|in:ringan,sedang,berat',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Pastikan user_id adalah siswa
+        $siswa = User::find($request->user_id);
+        if (!$siswa->hasRole('siswa')) {
+            return response()->json([
+                'message' => 'User yang dipilih bukan siswa'
+            ], 400);
+        }
+
+        $catatan = CatatanPelanggaran::create([
+            'user_id' => $request->user_id,
+            'tanggal' => $request->tanggal,
+            'jenis_pelanggaran' => $request->jenis_pelanggaran,
+            'deskripsi' => $request->deskripsi,
+            'tingkat_keparahan' => $request->tingkat_keparahan,
+            'guru_id' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'message' => 'Catatan pelanggaran berhasil ditambahkan',
+            'data' => $catatan
+        ], 201);
+    }
+
+    /**
+     * Update catatan pelanggaran
+     */
+    public function update(Request $request, $id)
+    {
+        $catatan = CatatanPelanggaran::find($id);
+
+        if (!$catatan) {
+            return response()->json(['message' => 'Catatan tidak ditemukan'], 404);
+        }
+
+        // Hanya guru yang membuat atau BK yang bisa mengedit
+        if ($catatan->guru_id != Auth::id() && !Auth::user()->hasRole('bk')) {
+            return response()->json(['message' => 'Anda tidak memiliki izin untuk mengedit catatan ini'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'tanggal' => 'sometimes|required|date',
+            'jenis_pelanggaran' => 'sometimes|required|string|max:255',
+            'deskripsi' => 'sometimes|required|string',
+            'tingkat_keparahan' => 'sometimes|required|in:ringan,sedang,berat',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $catatan->update($request->only([
+            'tanggal',
+            'jenis_pelanggaran',
+            'deskripsi',
+            'tingkat_keparahan'
+        ]));
+
+        return response()->json([
+            'message' => 'Catatan pelanggaran berhasil diperbarui',
+            'data' => $catatan
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\DashboardController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\DashboardController.php
+Size: 7.82 KB
+Last Modified: 09/02/2025 17:28:19
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\AbsensiGuru;
+use App\Models\AbsensiSiswa;
+use App\Models\CatatanPelanggaran;
+use App\Models\Jadwal;
+use App\Models\Zona;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class DashboardController extends Controller
+{
+    /**
+     * Tampilkan data dashboard berdasarkan role
+     */
+    public function index()
+    {
+        $user = Auth::user();
+        $role = $user->roles->first()->name ?? 'siswa';
+
+        switch ($role) {
+            case 'siswa':
+                return $this->dashboardSiswa($user);
+            case 'guru':
+                return $this->dashboardGuru($user);
+            case 'bk':
+                return $this->dashboardBk($user);
+            case 'it':
+                return $this->dashboardIt($user);
+            default:
+                return $this->dashboardSiswa($user);
+        }
+    }
+
+    private function dashboardSiswa($user)
+    {
+        // Data absensi hari ini
+        $absensiHariIni = AbsensiSiswa::where('user_id', $user->id)
+            ->whereDate('tanggal', now()->format('Y-m-d'))
+            ->first();
+
+        // Jadwal hari ini
+        $hariIni = strtolower(now()->format('l'));
+        $hariMap = [
+            'monday' => 'senin',
+            'tuesday' => 'selasa',
+            'wednesday' => 'rabu',
+            'thursday' => 'kamis',
+            'friday' => 'jumat',
+            'saturday' => 'sabtu'
+        ];
+        $hari = $hariMap[$hariIni] ?? 'senin';
+
+        $jadwalHariIni = Jadwal::whereHas('kelas.siswa', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+            ->where('hari', $hari)
+            ->with('guru', 'kelas')
+            ->orderBy('jam_mulai')
+            ->get();
+
+        // Pelanggaran terbaru
+        $pelanggaranTerbaru = CatatanPelanggaran::where('user_id', $user->id)
+            ->orderBy('tanggal', 'desc')
+            ->take(5)
+            ->get();
+
+        return response()->json([
+            'role' => 'siswa',
+            'absensi' => $absensiHariIni,
+            'jadwal_hari_ini' => $jadwalHariIni,
+            'pelanggaran_terbaru' => $pelanggaranTerbaru,
+            'total_absensi_hadir' => AbsensiSiswa::where('user_id', $user->id)
+                ->where('status', 'hadir')
+                ->count(),
+            'total_absensi_izin' => AbsensiSiswa::where('user_id', $user->id)
+                ->where('status', 'izin')
+                ->count(),
+            'total_absensi_sakit' => AbsensiSiswa::where('user_id', $user->id)
+                ->where('status', 'sakit')
+                ->count(),
+            'total_absensi_alpha' => AbsensiSiswa::where('user_id', $user->id)
+                ->where('status', 'alpha')
+                ->count(),
+        ]);
+    }
+
+    private function dashboardGuru($user)
+    {
+        // Absensi guru hari ini
+        $absensiHariIni = AbsensiGuru::where('user_id', $user->id)
+            ->whereDate('tanggal', now()->format('Y-m-d'))
+            ->first();
+
+        // Jadwal mengajar hari ini
+        $hariIni = strtolower(now()->format('l'));
+        $hariMap = [
+            'monday' => 'senin',
+            'tuesday' => 'selasa',
+            'wednesday' => 'rabu',
+            'thursday' => 'kamis',
+            'friday' => 'jumat',
+            'saturday' => 'sabtu'
+        ];
+        $hari = $hariMap[$hariIni] ?? 'senin';
+
+        $jadwalHariIni = Jadwal::where('guru_id', $user->id)
+            ->where('hari', $hari)
+            ->with('kelas')
+            ->orderBy('jam_mulai')
+            ->get();
+
+        // Absensi siswa hari ini
+        $absensiSiswaHariIni = AbsensiSiswa::whereDate('tanggal', now()->format('Y-m-d'))
+            ->whereHas('user.kelas', function ($query) use ($user) {
+                $query->whereHas('jadwal', function ($q) use ($user) {
+                    $q->where('guru_id', $user->id);
+                });
+            })
+            ->with('user')
+            ->get();
+
+        return response()->json([
+            'role' => 'guru',
+            'absensi' => $absensiHariIni,
+            'jadwal_hari_ini' => $jadwalHariIni,
+            'absensi_siswa_hari_ini' => $absensiSiswaHariIni,
+            'total_jadwal_mengajar' => Jadwal::where('guru_id', $user->id)->count(),
+            'total_siswa_mengajar' => \App\Models\User::whereHas('kelas.jadwal', function ($query) use ($user) {
+                $query->where('guru_id', $user->id);
+            })->count(),
+        ]);
+    }
+
+    private function dashboardBk($user)
+    {
+        // Pelanggaran hari ini
+        $pelanggaranHariIni = CatatanPelanggaran::whereDate('tanggal', now()->format('Y-m-d'))
+            ->with('siswa', 'guru')
+            ->get();
+
+        // Pelanggaran berdasarkan tingkat keparahan
+        $pelanggaranRingan = CatatanPelanggaran::where('tingkat_keparahan', 'ringan')->count();
+        $pelanggaranSedang = CatatanPelanggaran::where('tingkat_keparahan', 'sedang')->count();
+        $pelanggaranBerat = CatatanPelanggaran::where('tingkat_keparahan', 'berat')->count();
+
+        // Statistik pelanggaran per kelas
+        $statistikPerKelas = \DB::table('catatan_pelanggaran')
+            ->join('users', 'catatan_pelanggaran.user_id', '=', 'users.id')
+            ->join('kelas_user', 'users.id', '=', 'kelas_user.user_id')
+            ->join('kelas', 'kelas_user.kelas_id', '=', 'kelas.id')
+            ->select('kelas.nama_kelas', \DB::raw('count(*) as total'))
+            ->groupBy('kelas.nama_kelas')
+            ->get();
+
+        return response()->json([
+            'role' => 'bk',
+            'pelanggaran_hari_ini' => $pelanggaranHariIni,
+            'total_pelanggaran' => CatatanPelanggaran::count(),
+            'pelanggaran_ringan' => $pelanggaranRingan,
+            'pelanggaran_sedang' => $pelanggaranSedang,
+            'pelanggaran_berat' => $pelanggaranBerat,
+            'statistik_per_kelas' => $statistikPerKelas,
+            'total_siswa_bermasalah' => CatatanPelanggaran::distinct('user_id')->count('user_id'),
+        ]);
+    }
+
+    private function dashboardIt($user)
+    {
+        // Zona absensi
+        $zonaAktif = Zona::where('is_active', true)->first();
+        $totalZona = Zona::count();
+
+        // Statistik absensi
+        $totalAbsensiSiswa = AbsensiSiswa::count();
+        $totalAbsensiGuru = AbsensiGuru::count();
+
+        $absensiHariIniSiswa = AbsensiSiswa::whereDate('tanggal', now()->format('Y-m-d'))->count();
+        $absensiHariIniGuru = AbsensiGuru::whereDate('tanggal', now()->format('Y-m-d'))->count();
+
+        // Statistik user
+        $totalUser = \App\Models\User::count();
+        $totalSiswa = \App\Models\User::role('siswa')->count();
+        $totalGuru = \App\Models\User::role('guru')->count();
+        $totalBk = \App\Models\User::role('bk')->count();
+
+        // Jadwal
+        $totalJadwal = Jadwal::count();
+        $jadwalPerKelas = Jadwal::with('kelas')->get()
+            ->groupBy('kelas_id')
+            ->map(function ($jadwal, $kelas_id) {
+                return [
+                    'kelas_id' => $kelas_id,
+                    'total_jadwal' => $jadwal->count(),
+                    'hari' => $jadwal->pluck('hari')->unique()->values()
+                ];
+            });
+
+        return response()->json([
+            'role' => 'it',
+            'zona_aktif' => $zonaAktif,
+            'total_zona' => $totalZona,
+            'statistik_absensi' => [
+                'total_siswa' => $totalAbsensiSiswa,
+                'total_guru' => $totalAbsensiGuru,
+                'hari_ini_siswa' => $absensiHariIniSiswa,
+                'hari_ini_guru' => $absensiHariIniGuru,
+            ],
+            'statistik_user' => [
+                'total' => $totalUser,
+                'siswa' => $totalSiswa,
+                'guru' => $totalGuru,
+                'bk' => $totalBk,
+            ],
+            'statistik_jadwal' => [
+                'total' => $totalJadwal,
+                'per_kelas' => $jadwalPerKelas,
+            ],
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\JadwalController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\JadwalController.php
+Size: 1.93 KB
+Last Modified: 09/02/2025 17:28:06
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\Jadwal;
+use App\Models\Kelas;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class JadwalController extends Controller
+{
+    /**
+     * Tampilkan semua jadwal
+     */
+    public function index(Request $request)
+    {
+        $query = Jadwal::with('kelas', 'guru');
+
+        // Filter berdasarkan kelas jika role guru atau siswa
+        if ($request->has('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
+        }
+
+        // Filter berdasarkan hari
+        if ($request->has('hari')) {
+            $query->where('hari', $request->hari);
+        }
+
+        $jadwal = $query->orderBy('hari')->orderBy('jam_mulai')->get();
+
+        return response()->json($jadwal);
+    }
+
+    /**
+     * Tambah jadwal baru
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'kelas_id' => 'required|exists:kelas,id',
+            'guru_id' => 'required|exists:users,id',
+            'mata_pelajaran' => 'required|string|max:255',
+            'hari' => 'required|in:senin,selasa,rabu,kamis,jumat,sabtu',
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Pastikan guru_id adalah guru
+        $guru = \App\Models\User::find($request->guru_id);
+        if (!$guru->hasRole('guru')) {
+            return response()->json([
+                'message' => 'User yang dipilih bukan guru'
+            ], 400);
+        }
+
+        $jadwal = Jadwal::create($request->all());
+
+        return response()->json([
+            'message' => 'Jadwal berhasil ditambahkan',
+            'data' => $jadwal
+        ], 201);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\NotificationController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\NotificationController.php
+Size: 1.22 KB
+Last Modified: 09/01/2025 13:54:43
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Notifications\DatabaseNotification;
+
+class NotificationController extends Controller
+{
+    public function unread()
+    {
+        $notifications = auth()->user()->unreadNotifications()->latest()->get();
+
+        return response()->json($notifications->map(function ($notification) {
+            return [
+                'id' => $notification->id,
+                'type' => class_basename($notification->type),
+                'data' => $notification->data,
+                'read_at' => $notification->read_at,
+                'created_at' => $notification->created_at->toIso8601String()
+            ];
+        }));
+    }
+
+    public function markAsRead($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+
+        return response()->json([
+            'message' => 'Notifikasi ditandai sebagai telah dibaca'
+        ]);
+    }
+
+    public function markAllAsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+
+        return response()->json([
+            'message' => 'Semua notifikasi ditandai sebagai telah dibaca'
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Api\ZonaController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Api\ZonaController.php
+Size: 2.44 KB
+Last Modified: 09/02/2025 17:27:52
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\Zona;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class ZonaController extends Controller
+{
+    /**
+     * Tampilkan semua zona
+     */
+    public function index()
+    {
+        $zona = Zona::orderBy('nama', 'asc')->get();
+        return response()->json($zona);
+    }
+
+    /**
+     * Tambah zona baru
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:255',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius' => 'required|numeric|min:10|max:500',
+            'is_active' => 'boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Jika zona diaktifkan, nonaktifkan zona lainnya
+        if ($request->is_active) {
+            Zona::where('is_active', true)->update(['is_active' => false]);
+        }
+
+        $zona = Zona::create($request->all());
+
+        return response()->json([
+            'message' => 'Zona berhasil ditambahkan',
+            'data' => $zona
+        ], 201);
+    }
+
+    /**
+     * Update zona
+     */
+    public function update(Request $request, $id)
+    {
+        $zona = Zona::find($id);
+
+        if (!$zona) {
+            return response()->json(['message' => 'Zona tidak ditemukan'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nama' => 'sometimes|required|string|max:255',
+            'latitude' => 'sometimes|required|numeric',
+            'longitude' => 'sometimes|required|numeric',
+            'radius' => 'sometimes|required|numeric|min:10|max:500',
+            'is_active' => 'boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Jika zona diaktifkan, nonaktifkan zona lainnya
+        if ($request->has('is_active') && $request->is_active) {
+            Zona::where('is_active', true)->update(['is_active' => false]);
+        }
+
+        $zona->update($request->all());
+
+        return response()->json([
+            'message' => 'Zona berhasil diperbarui',
+            'data' => $zona
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\AuthenticatedSessionController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\AuthenticatedSessionController.php
+Size: 1.55 KB
+Last Modified: 09/01/2025 17:55:40
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthenticatedSessionController extends Controller
+{
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function store(LoginRequest $request): JsonResponse|RedirectResponse
+    {
+        $request->authenticate();
+
+        // HANYA gunakan session untuk permintaan web
+        if (!$request->wantsJson()) {
+            $request->session()->regenerate();
+        }
+
+        // Jika permintaan ingin respons JSON (API request)
+        if ($request->wantsJson()) {
+            return response()->json([
+                'token' => $request->user()->createToken('api-token')->plainTextToken
+            ]);
+        }
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    /**
+     * Destroy an authenticated session.
+     */
+    public function destroy(Request $request): JsonResponse|RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        // HANYA gunakan session untuk permintaan web
+        if (!$request->wantsJson()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        // Jika permintaan ingin respons JSON (API request)
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Logged out successfully']);
+        }
+
+        return redirect('/');
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\ConfirmablePasswordController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\ConfirmablePasswordController.php
+Size: 1.03 KB
+Last Modified: 08/11/2025 12:26:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ConfirmablePasswordController extends Controller
+{
+    /**
+     * Show the confirm password view.
+     */
+    public function show(): Response
+    {
+        return Inertia::render('Auth/ConfirmPassword');
+    }
+
+    /**
+     * Confirm the user's password.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        if (! Auth::guard('web')->validate([
+            'email' => $request->user()->email,
+            'password' => $request->password,
+        ])) {
+            throw ValidationException::withMessages([
+                'password' => __('auth.password'),
+            ]);
+        }
+
+        $request->session()->put('auth.password_confirmed_at', time());
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\EmailVerificationNotificationController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\EmailVerificationNotificationController.php
+Size: 662 bytes
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class EmailVerificationNotificationController extends Controller
+{
+    /**
+     * Send a new email verification notification.
+     */
+    public function store(Request $request): JsonResponse|RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended('/dashboard');
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return response()->json(['status' => 'verification-link-sent']);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\EmailVerificationPromptController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\EmailVerificationPromptController.php
+Size: 628 bytes
+Last Modified: 08/11/2025 12:26:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class EmailVerificationPromptController extends Controller
+{
+    /**
+     * Display the email verification prompt.
+     */
+    public function __invoke(Request $request): RedirectResponse|Response
+    {
+        return $request->user()->hasVerifiedEmail()
+                    ? redirect()->intended(route('dashboard', absolute: false))
+                    : Inertia::render('Auth/VerifyEmail', ['status' => session('status')]);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\NewPasswordController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\NewPasswordController.php
+Size: 1.71 KB
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+
+class NewPasswordController extends Controller
+{
+    /**
+     * Handle an incoming new password request.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        // Here we will attempt to reset the user's password. If it is successful we
+        // will update the password on an actual user model and persist it to the
+        // database. Otherwise we will parse the error and return the response.
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user) use ($request) {
+                $user->forceFill([
+                    'password' => Hash::make($request->string('password')),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status != Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages([
+                'email' => [__($status)],
+            ]);
+        }
+
+        return response()->json(['status' => __($status)]);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\PasswordController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\PasswordController.php
+Size: 734 bytes
+Last Modified: 08/11/2025 12:26:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+
+class PasswordController extends Controller
+{
+    /**
+     * Update the user's password.
+     */
+    public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back();
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\PasswordResetLinkController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\PasswordResetLinkController.php
+Size: 1.13 KB
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
+
+class PasswordResetLinkController extends Controller
+{
+    /**
+     * Handle an incoming password reset link request.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        // We will send the password reset link to this user. Once we have attempted
+        // to send the link, we will examine the response then see the message we
+        // need to show to the user. Finally, we'll send out a proper response.
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if ($status != Password::RESET_LINK_SENT) {
+            throw ValidationException::withMessages([
+                'email' => [__($status)],
+            ]);
+        }
+
+        return response()->json(['status' => __($status)]);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\RegisteredUserController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\RegisteredUserController.php
+Size: 2.34 KB
+Last Modified: 09/02/2025 17:14:36
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Models\Kelas;
+use App\Models\User;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
+use Illuminate\View\View;
+
+class RegisteredUserController extends Controller
+{
+    /**
+     * Display the registration view.
+     */
+    public function create(): View
+    {
+        return view('auth.register');
+    }
+
+    /**
+     * Handle an incoming registration request.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        // Ekstrak role dari email
+        $email = strtolower($request->email);
+        $role = 'siswa'; // default role
+        $roleKeyword = '';
+
+        // Cek untuk role guru
+        if (preg_match('/\.(guru|pengajar|teacher)@/', $email, $matches)) {
+            $role = 'guru';
+            $roleKeyword = $matches[1];
+        }
+        // Cek untuk role IT
+        else if (preg_match('/\.(it|teknisi|troubleshoot)@/', $email, $matches)) {
+            $role = 'it';
+            $roleKeyword = $matches[1];
+        }
+        // Cek untuk role BK
+        else if (preg_match('/\.(bk|konseling|psikolog)@/', $email, $matches)) {
+            $role = 'bk';
+            $roleKeyword = $matches[1];
+        }
+        // Role siswa sudah sebagai default
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Assign role ke user
+        $user->assignRole($role);
+
+        // Jika role siswa, assign ke kelas default
+        if ($role === 'siswa') {
+            $kelas = Kelas::first();
+            if ($kelas) {
+                $user->kelas()->attach($kelas->id);
+            }
+        }
+
+        // Simpan informasi role keyword untuk referensi
+        $user->update([
+            'role_keyword' => $roleKeyword
+        ]);
+
+        event(new Registered($user));
+
+        Auth::login($user);
+
+        return redirect(route('dashboard'));
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Auth\VerifyEmailController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Auth\VerifyEmailController.php
+Size: 854 bytes
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\RedirectResponse;
+
+class VerifyEmailController extends Controller
+{
+    /**
+     * Mark the authenticated user's email address as verified.
+     */
+    public function __invoke(EmailVerificationRequest $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended(
+                config('app.frontend_url').'/dashboard?verified=1'
+            );
+        }
+
+        if ($request->user()->markEmailAsVerified()) {
+            event(new Verified($request->user()));
+        }
+
+        return redirect()->intended(
+            config('app.frontend_url').'/dashboard?verified=1'
+        );
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\AbsensiGuruController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\AbsensiGuruController.php
+Size: 987 bytes
+Last Modified: 08/26/2025 13:40:31
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\AbsensiGuru;
+
+class AbsensiGuruController extends Controller
+{
+    public function index()
+    {
+        return AbsensiGuru::with('guru')->get();
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'guru_id' => 'required|exists:users,id',
+            'tanggal' => 'required|date',
+            'status' => 'required|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $absensi = AbsensiGuru::create($validated);
+        return response()->json($absensi, 201);
+    }
+    public function update(Request $request, $id)
+    {
+        $absensi = AbsensiGuru::findOrFail($id);
+        $absensi->update($request->all());
+        return response()->json($absensi);
+    }
+    public function destroy($id)
+    {
+        AbsensiGuru::destroy($id);
+        return response()->json(['Pesan' => 'DATA ABSENSI GURU DIHAPUS']);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\AbsensiSiswaController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\AbsensiSiswaController.php
+Size: 3.32 KB
+Last Modified: 08/23/2025 17:18:34
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\AbsensiSiswa;
+use Illuminate\Support\Facades\Storage;
+
+use Illuminate\Http\Request;
+
+class AbsensiSiswaController extends Controller
+{
+    // GET /api/absensi-siswa
+    public function index()
+    {
+        return AbsensiSiswa::with(['siswa:id,name', 'jadwal:id,nama'])->latest()->get();
+    }
+
+    // POST /api/absensi-siswa
+    // POST /api/absensi-siswa
+    public function store(Request $request)
+    {
+        $request->validate([
+            'siswa_id'   => 'required|exists:users,id',
+            'jadwal_id'  => 'nullable|exists:jadwal,id',
+            'lat'        => 'required|numeric',
+            'lng'        => 'required|numeric',
+            'foto'       => 'nullable|image|max:2048',
+            'device_info' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        // Simpan foto absensi (jika ada)
+        $path = null;
+        if ($request->hasFile('foto')) {
+            $path = $request->file('foto')->store('absensi', 'public');
+        }
+
+        // Titik pusat sekolah (contoh koordinat)
+        $schoolLat = -7.2756;
+        $schoolLng = 112.6426;
+        $radius = 100; // meter
+
+        // Hitung jarak siswa dari sekolah
+        $distance = $this->calculateDistance(
+            $schoolLat,
+            $schoolLng,
+            $request->lat,
+            $request->lng
+        );
+
+        $validZona = $distance <= $radius;
+
+        $absen = AbsensiSiswa::create([
+            'siswa_id'    => $request->siswa_id,
+            'jadwal_id'   => $request->jadwal_id,
+            'waktu'       => now(),
+            'foto_path'   => $path,
+            'lat'         => $request->lat,
+            'lng'         => $request->lng,
+            'valid_zona'  => $validZona,
+            'device_info' => $request->device_info ? json_decode($request->device_info, true) : null,
+            'keterangan'  => $request->keterangan,
+        ]);
+
+        return response()->json([
+            'ok'       => $validZona,
+            'message'  => $validZona ? 'Absensi berhasil' : 'Di luar radius sekolah (absensi tidak sah)',
+            'distance' => round($distance, 2) . ' meter',
+            'data'     => $absen,
+        ]);
+    }
+
+    // Haversine Formula untuk menghitung jarak
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371000; // meter
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
+    }
+
+
+    // GET /api/absensi-siswa/{id}
+    public function show($id)
+    {
+        return AbsensiSiswa::with(['siswa:id,name', 'jadwal:id,nama'])->findOrFail($id);
+    }
+
+    // PUT /api/absensi-siswa/{id}
+    public function update(Request $request, $id)
+    {
+        $absen = AbsensiSiswa::findOrFail($id);
+
+        $absen->update($request->only(['keterangan', 'valid_zona']));
+
+        return response()->json(['ok' => true, 'data' => $absen]);
+    }
+
+    // DELETE /api/absensi-siswa/{id}
+    public function destroy($id)
+    {
+        $absen = AbsensiSiswa::findOrFail($id);
+        $absen->delete();
+
+        return response()->json(['ok' => true, 'message' => 'deleted']);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\CatatanPelanggaranController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\CatatanPelanggaranController.php
+Size: 1.46 KB
+Last Modified: 08/12/2025 17:07:25
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\CatatanPelanggaran;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Notifications\NewPelanggaranNotification;
+
+class CatatanPelanggaranController extends Controller
+{
+    /**
+     * Menampilkan daftar catatan pelanggaran (khusus guru BK)
+     */
+    public function index()
+    {
+        $catatan = CatatanPelanggaran::with(['guru', 'siswa'])->get();
+        return view('pelanggaran.index', compact('catatan'));
+    }
+
+    /**
+     * Form input pelanggaran (khusus guru)
+     */
+    public function create()
+    {
+        $siswa = User::role('siswa')->get();
+        return view('pelanggaran.create', compact('siswa'));
+    }
+
+    /**
+     * Menyimpan catatan pelanggaran
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'siswa_id' => 'required|exists:users,id',
+            'deskripsi' => 'required|string|max:2000',
+        ]);
+
+        $pelanggaran = CatatanPelanggaran::create([
+            'guru_id' => Auth::id(),
+            'siswa_id' => $request->siswa_id,
+            'deskripsi' => $request->deskripsi,
+        ]);
+
+        // Kirim notifikasi ke semua guru BK
+        $guruBK = User::role('guru_bk')->get();
+        foreach ($guruBK as $g) {
+            $g->notify(new NewPelanggaranNotification($pelanggaran));
+        }
+
+        return redirect()->back()->with('success', 'Catatan pelanggaran berhasil ditambahkan.');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\Controller.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\Controller.php
+Size: 77 bytes
+Last Modified: 08/03/2025 21:58:20
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\JadwalController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\JadwalController.php
+Size: 1.76 KB
+Last Modified: 08/14/2025 17:22:05
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Jadwal;
+use App\Models\Kelas;
+use App\Models\Jurusan;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class JadwalController extends Controller
+{
+    //
+    public function index()
+    {
+        $jadwal = Jadwal::with(['guru', 'kelas', 'jurusan'])->get();
+        return view('jadwal.index', compact('jadwal'));
+    }
+    public function create()
+    {
+        $kelas = Kelas::all();
+        $jurusan = Jurusan::all();
+        return view('jadwal.create', compact('kelas', 'jurusan'));
+    }
+    public function store(Request $request)
+    {
+        $request->validate([
+            'judul_event' => 'required|string|max:255',
+            'tanggal' => 'required|date',
+            'jam_mulai' => 'required',
+            'jam_selesai' => 'required',
+            'kelas_id' => 'required|exist:jurusan,id',
+            'jenjang' => 'required|in:10,11,12',
+            'tipe' => 'required|in:pelajaran,event',
+        ]);
+        Jadwal::create([
+            'judul_event' => $request->judul_event,
+            'deskripsi' => $request->deskripsi,
+            'tanggal' => $request->tanggal,
+            'jam_mulai' => $request->jam_mulai,
+            'jam_selesai' => $request->jam_selesai,
+            'guru_id' => Auth::id(),
+            'kelas_id' => $request->kelas_id,
+            'jurusan_id' => $request->jurusan_id,
+            'jenjang' => $request->jenjang,
+            'tipe' => $request->tipe,
+
+        ]);
+        return redirect()->route('jadwal.index')->with('SUKSES', 'JADWAL BERHASIL DI TAMBAHKAN');
+    }
+
+    public function destroy($id)
+    {
+        $jadwal = Jadwal::findOrFaiil($id);
+        $jadwal->delete();
+        return redirect()->route('jadwal.index')->with('SUKSES', 'JADWAL BERHASIL DI HAPUS');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Http\Controllers\ProfileController.php
+Path: D:\smk_monitoring_app\app\Http\Controllers\ProfileController.php
+Size: 1.48 KB
+Last Modified: 08/11/2025 12:26:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProfileController extends Controller
+{
+    /**
+     * Display the user's profile form.
+     */
+    public function edit(Request $request): Response
+    {
+        return Inertia::render('Profile/Edit', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => session('status'),
+        ]);
+    }
+
+    /**
+     * Update the user's profile information.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return Redirect::route('profile.edit');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return Redirect::to('/');
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Middleware\EnsureEmailIsVerified.php
+Path: D:\smk_monitoring_app\app\Http\Middleware\EnsureEmailIsVerified.php
+Size: 739 bytes
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class EnsureEmailIsVerified
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (! $request->user() ||
+            ($request->user() instanceof MustVerifyEmail &&
+            ! $request->user()->hasVerifiedEmail())) {
+            return response()->json(['message' => 'Your email address is not verified.'], 409);
+        }
+
+        return $next($request);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Middleware\HandleInertiaRequests.php
+Path: D:\smk_monitoring_app\app\Http\Middleware\HandleInertiaRequests.php
+Size: 780 bytes
+Last Modified: 08/11/2025 12:26:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Middleware;
+
+use Illuminate\Http\Request;
+use Inertia\Middleware;
+
+class HandleInertiaRequests extends Middleware
+{
+    /**
+     * The root template that is loaded on the first page visit.
+     *
+     * @var string
+     */
+    protected $rootView = 'app';
+
+    /**
+     * Determine the current asset version.
+     */
+    public function version(Request $request): ?string
+    {
+        return parent::version($request);
+    }
+
+    /**
+     * Define the props that are shared by default.
+     *
+     * @return array<string, mixed>
+     */
+    public function share(Request $request): array
+    {
+        return [
+            ...parent::share($request),
+            'auth' => [
+                'user' => $request->user(),
+            ],
+        ];
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Requests\Auth\LoginRequest.php
+Path: D:\smk_monitoring_app\app\Http\Requests\Auth\LoginRequest.php
+Size: 2.18 KB
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Requests\Auth;
+
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class LoginRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ];
+    }
+
+    /**
+     * Attempt to authenticate the request's credentials.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function authenticate(): void
+    {
+        $this->ensureIsNotRateLimited();
+
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed'),
+            ]);
+        }
+
+        RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Ensure the login request is not rate limited.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function ensureIsNotRateLimited(): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+            return;
+        }
+
+        event(new Lockout($this));
+
+        $seconds = RateLimiter::availableIn($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    /**
+     * Get the rate limiting throttle key for the request.
+     */
+    public function throttleKey(): string
+    {
+        return Str::transliterate(Str::lower($this->input('email')).'|'.$this->ip());
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Requests\ProfileUpdateRequest.php
+Path: D:\smk_monitoring_app\app\Http\Requests\ProfileUpdateRequest.php
+Size: 743 bytes
+Last Modified: 08/11/2025 12:26:00
+------------------------------------------------------------
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\User;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class ProfileUpdateRequest extends FormRequest
+{
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class)->ignore($this->user()->id),
+            ],
+        ];
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Http\Kernel.php
+Path: D:\smk_monitoring_app\app\Http\Kernel.php
+Size: 2.29 KB
+Last Modified: 09/02/2025 17:16:43
+------------------------------------------------------------
+<?php
+
+namespace App\Http;
+
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
+
+class Kernel extends HttpKernel
+{
+    /**
+     * The application's global HTTP middleware stack.
+     */
+    protected $middleware = [
+        \App\Http\Middleware\TrustProxies::class,
+        \App\Http\Middleware\CheckForMaintenanceMode::class,
+        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
+        \App\Http\Middleware\TrimStrings::class,
+        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+    ];
+
+    /**
+     * The application's route middleware groups.
+     */
+    protected $middlewareGroups = [
+        'web' => [
+            \App\Http\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
+
+        'api' => [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
+    ];
+
+    /**
+     * The application's route middleware.
+     */
+    protected $routeMiddleware = [
+        'auth' => \App\Http\Middleware\Authenticate::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+        'can' => \Illuminate\Auth\Middleware\Authorize::class,
+        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+        'signed' => \App\Http\Middleware\ValidateSignature::class,
+        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+
+        // Middleware Spatie - INI YANG BENAR (TANPA 's' DI MIDDLEWARE)
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\AbsensiGuru.php
+Path: D:\smk_monitoring_app\app\Models\AbsensiGuru.php
+Size: 567 bytes
+Last Modified: 09/01/2025 08:49:47
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AbsensiGuru extends Model
+{
+    protected $table = 'absensi_guru';
+
+    // Pastikan semua kolom yang tidak boleh null ada di fillable
+    protected $fillable = [
+        'guru_id',
+        'tanggal',
+        'jam_masuk',
+        'jam_keluar',
+        'status',
+        'keterangan',
+        'latitude',
+        'longitude'
+    ];
+
+    protected $casts = [
+        'tanggal' => 'date',
+    ];
+
+    public function guru()
+    {
+        return $this->belongsTo(User::class, 'guru_id');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\AbsensiSiswa.php
+Path: D:\smk_monitoring_app\app\Models\AbsensiSiswa.php
+Size: 781 bytes
+Last Modified: 08/22/2025 17:19:26
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AbsensiSiswa extends Model
+{
+    protected $table = 'absensi_siswa';
+
+    protected $fillable = [
+        'siswa_id',
+        'jadwal_id',
+        'waktu',
+        'foto_path',
+        'lat',
+        'lng',
+        'valid_zona',
+        'device_info',
+        'keterangan',
+    ];
+
+    protected $casts = [
+        'waktu' => 'datetime',
+        'device_info' => 'array',
+        'valid_zona' => 'boolean',
+    ];
+
+    /**
+     * Relasi ke siswa (User)
+     */
+    public function siswa()
+    {
+        return $this->belongsTo(User::class, 'siswa_id');
+    }
+
+    /**
+     * Relasi ke jadwal
+     */
+    public function jadwal()
+    {
+        return $this->belongsTo(Jadwal::class, 'jadwal_id');
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Models\CatatanPelanggaran.php
+Path: D:\smk_monitoring_app\app\Models\CatatanPelanggaran.php
+Size: 375 bytes
+Last Modified: 09/01/2025 09:31:44
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CatatanPelanggaran extends Model
+{
+    protected $table = 'catatan_pelanggaran';
+
+    protected $fillable = [
+        'siswa',
+        'guru_bk',
+        'deskripsi',
+        'tindak_lanjut',
+        'tingkat',
+        'tanggal'
+    ];
+
+    protected $casts = [
+        'tanggal' => 'date'
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\Jadwal.php
+Path: D:\smk_monitoring_app\app\Models\Jadwal.php
+Size: 305 bytes
+Last Modified: 09/01/2025 09:33:08
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Jadwal extends Model
+{
+    protected $table = 'jadwal';
+
+    protected $fillable = [
+        'guru',
+        'kelas',
+        'mata_pelajaran',
+        'hari',
+        'jam_mulai',
+        'jam_selesai',
+        'ruang'
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\Jurusan.php
+Path: D:\smk_monitoring_app\app\Models\Jurusan.php
+Size: 424 bytes
+Last Modified: 08/22/2025 17:15:27
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Jurusan extends Model
+{
+    use HasFactory;
+
+    protected $table = 'jurusan';
+    protected $fillable = ['nama'];
+
+    // 🔗 Relasi ke kelas
+    public function kelas(): HasMany
+    {
+        return $this->hasMany(Kelas::class);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Models\Kelas.php
+Path: D:\smk_monitoring_app\app\Models\Kelas.php
+Size: 905 bytes
+Last Modified: 08/22/2025 17:15:15
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Kelas extends Model
+{
+    use HasFactory;
+
+    protected $table = 'kelas'; 
+    protected $fillable = ['nama', 'tingkat'];
+
+    // 🔗 Relasi ke jurusan (1 kelas punya 1 jurusan)
+    public function jurusan(): BelongsTo
+    {
+        return $this->belongsTo(Jurusan::class);
+    }
+
+    // 🔗 Relasi ke user (siswa/guru)
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'kelas_user')
+                    ->withTimestamps();
+    }
+
+    // 🔗 Relasi ke jadwal
+    public function jadwal(): HasMany
+    {
+        return $this->hasMany(Jadwal::class);
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Models\Siswa.php
+Path: D:\smk_monitoring_app\app\Models\Siswa.php
+Size: 368 bytes
+Last Modified: 08/27/2025 16:27:24
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Siswa extends Model
+{
+    protected $table = 'siswa'; // Tambahkan ini (tanpa "s")
+
+    protected $fillable = [
+        'user_id',
+        'nis',
+        'nama',
+        'kelas',
+        'jurusan'
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\User.php
+Path: D:\smk_monitoring_app\app\Models\User.php
+Size: 1.15 KB
+Last Modified: 09/02/2025 17:15:22
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role_keyword' // tambahkan field ini
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    /**
+     * Relasi dengan kelas (hanya untuk siswa)
+     */
+    public function kelas()
+    {
+        return $this->belongsToMany(Kelas::class, 'kelas_user');
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Models\Zona.php
+Path: D:\smk_monitoring_app\app\Models\Zona.php
+Size: 371 bytes
+Last Modified: 09/02/2025 17:45:45
+------------------------------------------------------------
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Zona extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'nama',
+        'latitude',
+        'longitude',
+        'radius',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
+}
+
+
+------------------------------------------------------------
+FILE: app\Notifications\AbsensiTerlambat.php
+Path: D:\smk_monitoring_app\app\Notifications\AbsensiTerlambat.php
+Size: 1.25 KB
+Last Modified: 09/01/2025 11:43:09
+------------------------------------------------------------
+<?php
+
+namespace App\Notifications;
+
+use App\Models\AbsensiSiswa;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\DatabaseMessage;
+use Illuminate\Notifications\Notification;
+
+class AbsensiTerlambat extends Notification implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public AbsensiSiswa $absensi) {}
+
+    public function via($notifiable)
+    {
+        return ['database', 'broadcast'];
+    }
+
+    public function toDatabase($notifiable)
+    {
+        return [
+            'title' => 'Absensi Terlambat',
+            'message' => 'Siswa ' . $this->absensi->siswa->name . ' terlambat masuk',
+            'type' => 'warning',
+            'url' => '/absensi/' . $this->absensi->id,
+            'timestamp' => now()->toIso8601String()
+        ];
+    }
+
+    public function toBroadcast($notifiable)
+    {
+        return new BroadcastMessage([
+            'title' => 'Absensi Terlambat',
+            'message' => 'Siswa ' . $this->absensi->siswa->name . ' terlambat masuk',
+            'type' => 'warning',
+            'url' => '/absensi/' . $this->absensi->id,
+            'timestamp' => now()->toIso8601String()
+        ]);
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Notifications\JadwalAkanDimulai.php
+Path: D:\smk_monitoring_app\app\Notifications\JadwalAkanDimulai.php
+Size: 1.14 KB
+Last Modified: 09/01/2025 11:42:43
+------------------------------------------------------------
+<?php
+
+namespace App\Notifications;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class JadwalAkanDimulai extends Notification
+{
+    use Queueable;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            //
+        ];
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Notifications\PelanggaranBaru.php
+Path: D:\smk_monitoring_app\app\Notifications\PelanggaranBaru.php
+Size: 1.14 KB
+Last Modified: 09/01/2025 11:42:41
+------------------------------------------------------------
+<?php
+
+namespace App\Notifications;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class PelanggaranBaru extends Notification
+{
+    use Queueable;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('The introduction to the notification.')
+            ->action('Notification Action', url('/'))
+            ->line('Thank you for using our application!');
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            //
+        ];
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Providers\AppServiceProvider.php
+Path: D:\smk_monitoring_app\app\Providers\AppServiceProvider.php
+Size: 769 bytes
+Last Modified: 08/31/2025 13:00:18
+------------------------------------------------------------
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        // Custom URL reset password agar diarahkan ke frontend
+        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            $frontendUrl = config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:3000'));
+            return "{$frontendUrl}/password-reset/{$token}?email={$notifiable->getEmailForPasswordReset()}";
+        });
+    }
+}
+
+
+------------------------------------------------------------
+FILE: app\Providers\RouteServiceProvider.php
+Path: D:\smk_monitoring_app\app\Providers\RouteServiceProvider.php
+Size: 1.26 KB
+Last Modified: 09/01/2025 17:48:35
+------------------------------------------------------------
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    /**
+     * The path to the "home" route for your application.
+     *
+     * Typically, users are redirected here after authentication.
+     *
+     * @var string
+     */
+    public const HOME = '/dashboard';
+
+    /**
+     * Define your route model bindings, pattern filters, and other route configuration.
+     */
+    public function boot(): void
+    {
+        $this->configureRateLimiting();
+
+        $this->routes(function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
+
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
+    }
+
+    /**
+     * Configure the rate limiters for the application.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+    }
+}
+
+
+
+------------------------------------------------------------
+FILE: app\Providers\TelescopeServiceProvider.php
+Path: D:\smk_monitoring_app\app\Providers\TelescopeServiceProvider.php
+Size: 1.60 KB
+Last Modified: 08/27/2025 00:48:18
+------------------------------------------------------------
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Gate;
+use Laravel\Telescope\IncomingEntry;
+use Laravel\Telescope\Telescope;
+use Laravel\Telescope\TelescopeApplicationServiceProvider;
+
+class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        // Telescope::night();
+
+        $this->hideSensitiveRequestDetails();
+
+        $isLocal = $this->app->environment('local');
+
+        Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
+            return $isLocal ||
+                   $entry->isReportableException() ||
+                   $entry->isFailedRequest() ||
+                   $entry->isFailedJob() ||
+                   $entry->isScheduledTask() ||
+                   $entry->hasMonitoredTag();
+        });
+    }
+
+    /**
+     * Prevent sensitive request details from being logged by Telescope.
+     */
+    protected function hideSensitiveRequestDetails(): void
+    {
+        if ($this->app->environment('local')) {
+            return;
+        }
+
+        Telescope::hideRequestParameters(['_token']);
+
+        Telescope::hideRequestHeaders([
+            'cookie',
+            'x-csrf-token',
+            'x-xsrf-token',
+        ]);
+    }
+
+    /**
+     * Register the Telescope gate.
+     *
+     * This gate determines who can access Telescope in non-local environments.
+     */
+    protected function gate(): void
+    {
+        Gate::define('viewTelescope', function ($user) {
+            return in_array($user->email, [
+                //
+            ]);
+        });
+    }
+}
+
+
+
+================================================================================
+TOTAL FILES IN CATEGORY: 52
+================================================================================

@@ -1,0 +1,219 @@
+﻿03 ROUTES
+================================================================================
+Generated on: 2025-09-02 18:00:45
+Project Path: D:\smk_monitoring_app
+
+------------------------------------------------------------
+FILE: routes\api.php
+Path: D:\smk_monitoring_app\routes\api.php
+Size: 3.59 KB
+Last Modified: 09/02/2025 17:20:49
+------------------------------------------------------------
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Api\AbsensiGuruController;
+use App\Http\Controllers\Api\AbsensiSiswaController;
+use App\Http\Controllers\Api\CatatanPelanggaranController;
+use App\Http\Controllers\Api\JadwalController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\NotificationController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Semua route API ada di sini. Pastikan setiap route menggunakan middleware
+| yang sesuai agar aman.
+|
+*/
+
+// --------------------
+// AUTHENTICATION
+// --------------------
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth:sanctum');
+
+// --------------------
+// USER INFO
+// --------------------
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return response()->json([
+        'id'    => $request->user()->id,
+        'name'  => $request->user()->name,
+        'email' => $request->user()->email,
+        'roles' => $request->user()->getRoleNames(),
+    ]);
+});
+
+// --------------------
+// ABSENSI (SISWA)
+// --------------------
+Route::middleware(['auth:sanctum', 'role:siswa'])->group(function () {
+    Route::post('/absen/siswa', [AbsensiSiswaController::class, 'absenSiswa']);
+});
+
+// --------------------
+// ABSENSI (GURU)
+// --------------------
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::post('/absen/guru/masuk', [AbsensiGuruController::class, 'absenMasuk']);
+    Route::post('/absen/guru/pulang', [AbsensiGuruController::class, 'absenPulang']);
+});
+
+// --------------------
+// CATATAN PELANGGARAN (GURU & BK)
+// --------------------
+// Solusi: Gunakan middleware role dengan sintaks yang benar untuk versi 6.x
+Route::middleware(['auth:sanctum', 'role:guru,bk'])->group(function () {
+    Route::get('/catatan-pelanggaran', [CatatanPelanggaranController::class, 'index']);
+    Route::post('/catatan-pelanggaran', [CatatanPelanggaranController::class, 'store']);
+    Route::put('/catatan-pelanggaran/{id}', [CatatanPelanggaranController::class, 'update']);
+});
+
+// --------------------
+// JADWAL PELAJARAN
+// --------------------
+// Solusi: Gunakan sintaks role yang benar untuk versi 6.x
+Route::middleware(['auth:sanctum', 'role:guru,admin'])->group(function () {
+    Route::get('/jadwal', [JadwalController::class, 'index']);
+
+    // Hanya admin yang bisa mengelola jadwal
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/jadwal', [JadwalController::class, 'store']);
+        Route::put('/jadwal/{id}', [JadwalController::class, 'update']);
+        Route::delete('/jadwal/{id}', [JadwalController::class, 'destroy']);
+    });
+});
+
+// --------------------
+// DASHBOARD
+// --------------------
+// Solusi: Gunakan sintaks role yang benar untuk versi 6.x
+Route::middleware(['auth:sanctum', 'role:siswa,guru,bk,admin'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+});
+
+// --------------------
+// NOTIFIKASI
+// --------------------
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+});
+
+
+------------------------------------------------------------
+FILE: routes\auth.php
+Path: D:\smk_monitoring_app\routes\auth.php
+Size: 1.34 KB
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/register', [RegisteredUserController::class, 'store'])
+    ->middleware('guest')
+    ->name('register');
+
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('guest')
+    ->name('login');
+
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.email');
+
+Route::post('/reset-password', [NewPasswordController::class, 'store'])
+    ->middleware('guest')
+    ->name('password.store');
+
+Route::get('/verify-email/{id}/{hash}', VerifyEmailController::class)
+    ->middleware(['auth', 'signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
+Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+
+
+------------------------------------------------------------
+FILE: routes\channels.php
+Path: D:\smk_monitoring_app\routes\channels.php
+Size: 471 bytes
+Last Modified: 09/01/2025 11:38:30
+------------------------------------------------------------
+<?php
+
+use App\Models\User;
+use Illuminate\Support\Facades\Broadcast;
+
+Broadcast::channel('absensi.terlambat.{userId}', function (User $user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
+
+Broadcast::channel('pelanggaran.baru.{userId}', function (User $user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
+
+Broadcast::channel('jadwal.akan-dimulai.{userId}', function (User $user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
+
+
+
+------------------------------------------------------------
+FILE: routes\console.php
+Path: D:\smk_monitoring_app\routes\console.php
+Size: 210 bytes
+Last Modified: 08/03/2025 21:58:20
+------------------------------------------------------------
+<?php
+
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+
+Artisan::command('inspire', function () {
+    $this->comment(Inspiring::quote());
+})->purpose('Display an inspiring quote');
+
+
+
+------------------------------------------------------------
+FILE: routes\web.php
+Path: D:\smk_monitoring_app\routes\web.php
+Size: 154 bytes
+Last Modified: 08/27/2025 00:28:58
+------------------------------------------------------------
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return ['Laravel' => app()->version()];
+});
+
+require __DIR__.'/auth.php';
+
+
+
+================================================================================
+TOTAL FILES IN CATEGORY: 5
+================================================================================

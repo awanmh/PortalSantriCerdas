@@ -1,0 +1,186 @@
+├── assets/
+│   ├── ClassDiagram.png
+│   ├── Flowchart.png
+│   └──logo.jpg
+├── app/
+│   ├── Events/
+│   │   └── AbsensiTerlambatEvent.php
+│   ├── Export/
+│   │   ├── AbsensiSiswaExport.php
+│   │   ├── CatatanPelanggaranExport.php
+│   │   ├── JadwalExport.php
+│   │   └── UsersExport.php
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/
+│   │   │   │   ├── AbsensiGuruController.php
+│   │   │   │   ├── AbsensisiswaControllerphp
+│   │   │   │   ├── ApiLoginControllerphp
+│   │   │   │   ├── CatatanPelanggaranController.php
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── ExportController.php
+│   │   │   │   ├── JadwalController.php
+│   │   │   │   ├── KelasController.php
+│   │   │   │   ├── NotificationsController.php
+│   │   │   │   ├── UserManagementController.php
+│   │   │   │   └── ZonaController.php
+│   │   │   ├── Auth/
+│   │   │   │   ├── AuthenticatedSessionController.php
+│   │   │   │   ├── ComfirmablePasswordController.php
+│   │   │   │   ├── EmailVerificationNotificationController.php
+│   │   │   │   ├── EmailVerificationPromptController.php
+│   │   │   │   ├── NewPasswordController.php
+│   │   │   │   ├── PasswordController.php
+│   │   │   │   ├── PasswordResetLinkController.php
+│   │   │   │   ├── ProfileController.php
+│   │   │   │   ├── RegisteredUserController.php
+│   │   │   │   └── VerifyEmailController.php
+│   │   │   ├── AbsensiGuruController.php
+│   │   │   ├── AbsensisiswaController.php
+│   │   │   ├── CatatanPelanggaranController.php
+│   │   │   ├── Controller.php
+│   │   │   └── JadwalController.php
+│   │   ├── Middleware/
+│   │   │   ├── EnsureEmailsVerified.php
+│   │   │   └── HandleInertiaRequests.php
+│   │   ├── Request/
+│   │   │   ├── Auth/
+│   │   │   │   └── LoginRequests.php
+│   │   │   ├── AbsensiGuruRequest.php
+│   │   │   ├── AbsensiSiswaRequest.php
+│   │   │   ├── CatatanPelanggaranRequest.php
+│   │   │   ├── ProfileUpdateRequest.php
+│   │   │   ├── UsersImportRequest.php
+│   │   │   ├── Controller.php
+│   │   │   └── ZonaRequest.php
+│   │   ├── Resources/
+│   │   │   ├── AbsensiGuruResources.php
+│   │   │   ├── AbsnesiSiswaResources.php
+│   │   │   ├── CatatanPelanggaranResources.php
+│   │   │   ├── JadwalResources.php
+│   │   │   ├── UserResources.php
+│   │   │   └── ZonaResources.php
+│   │   └── Kernel.php
+│   ├── Imports/
+│   │   │   └── UserImport.php
+│   ├── Models/
+│   │   ├── AbsenGuru.php
+│   │   ├── AbsenSiswa.php
+│   │   ├── CatatanPelanggaran.php
+│   │   ├── Jadwal.php
+│   │   ├── Jurusan.php
+│   │   ├── Kelas.php
+│   │   ├── Siswa.php
+│   │   ├── User.php
+│   │   └── Zona.php
+│   ├── Notifications/
+│   │   ├── AbsensiTerlambat.php
+│   │   ├── JadwalAkanDimulai.php
+│   │   └── PelanggaranBaru.php
+│   ├── Providers/
+│   │   ├── AppServiceProvider.php
+│   │   ├── RouteServiceProvider.php
+│   │   └── TelescopeServiceProvider.php
+├── bootstrap/
+│   ├── cache/
+│   │   ├── packages.php
+│   │   └──  services.php
+│   ├── app.php
+│   └── providers.php
+├── config/
+│   ├── app.php
+│   ├── auth.php
+│   ├── broadcasting.php
+│   ├── cache.php
+│   ├── cors.php
+│   ├── database.php
+│   ├── dompdf.php
+│   ├── excel.php
+│   ├── filesystems.php
+│   ├── logging.php
+│   ├── mail.php
+│   ├── permission.php
+│   ├── queue.php
+│   ├── reverb.php
+│   ├── sanctum.php
+│   ├── services.php
+│   ├── session.php
+│   └── telescope.php
+├── database/
+│   ├── factories/
+│   │   └── UserFactory.php
+│   ├── migrations/
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 2025_08_11_062459_create_permission_tables.php
+│   │   ├── 2025_08_12_072814_create_catatan_pelanggaran_table.php
+│   │   ├── 2025_08_12_145226_create_kelas_table.php
+│   │   ├── 2025_08_12_145233_create_jurusan_table.php
+│   │   ├── 2025_08_12_145241_create_jadwal_table.php
+│   │   ├── 2025_08_14_112328_create_zone_table.php
+│   │   ├── 2025_08_14_112418_create_absensi_siswa_table.php
+│   │   ├── 2025_08_14_113907_create_absensi_guru_table.php
+│   │   ├── 2025_08_14_113951_add_wali_kelas_to_kelas_table.php
+│   │   ├── 2025_08_14_114602_create_kelas_user_table.php
+│   │   ├── 2025_08_14_114724_create_bk_followup_table.php
+│   │   ├── 2025_08_23_102858_create_personal_access_tokens_table.php
+│   │   ├── 2025_08_26_174819_create_telescope_entries_table.php
+│   │   ├── 2025_08_27_092603_create_siswa_table.php
+│   │   ├── 2025_08_29_114542_add_columns_to_zone_table.php
+│   │   └── 2025_09_01_044325_create_notifications_table.php
+│   ├── seeders/
+│   │   ├── AbsensiSeeder.php
+│   │   ├── DatabaseSeeder.php
+│   │   ├── JadwalSeeder.php
+│   │   ├── JurusanSeeder.php
+│   │   ├── KelasSeeder.php
+│   │   ├── RolePermissionSeeder.php
+│   │   ├── UserSeeder.php
+│   │   └── ZonaSeeder.php
+├── Laravel_Analysis_Export/
+├── public/
+│   ├── css/
+│   ├── images/
+│   │   └── logo.png
+│   ├── js/
+│   └── index.php
+├── resources/
+│   ├── css/
+│   ├── js/
+│   │   └── echo.js
+│   └── views/
+│       └── app.blade.php
+├── routes/
+│   ├── api.php
+│   ├── auth.php
+│   ├── channels.php
+│   ├── console.php
+│   └── web.php
+├── storage/
+│   ├── app/
+│   ├── debugbar/
+│   ├── framework/
+│   │   ├── cache/
+│   │   ├── sessions/
+│   │   ├── testing/
+│   │   └── views/
+│   ├── logs/
+│   └── public/
+├── tests/
+│   ├── Feature/
+│   ├── Unit/
+│   └── TestCase.php
+├── .env
+├── .gitattributes
+├── .gitignore
+├── artisan
+├── composer.json
+├── composer.lock
+├── package.json
+├── readme.md
+└── server.php
+
+vendor/spatie/laravel-permission/src/Middleware/PermissionMiddleware.php
+vendor/spatie/laravel-permission/src/Middleware/RoleMiddleware.php
+vendor/spatie/laravel-permission/src/Middleware/RoleOrPermissionMiddleware.php

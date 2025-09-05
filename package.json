@@ -1,28 +1,49 @@
 {
-  "name": "smk_monitoring_app",
+  "name": "smk-monitoring-app",
   "version": "1.0.0",
-  "description": "Aplikasi monitoring kegiatan di SMK, mencakup: - Absensi siswa & guru (GPS + foto) - Jadwal pelajaran - Catatan pelanggaran siswa - Manajemen user (Admin, Guru, Guru BK, Siswa)",
+  "description": "Monitoring system for vocational school activities, including: student & teacher attendance (GPS + photo), class schedules, student violation records, and user management (Admin, Teacher, Counselor, Student).",
   "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"No test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/awanmh/PortalSantriCerdas.git"
+    "url": "https://github.com/awanmh/PortalSantriCerdas.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": [
+    "laravel",
+    "vue",
+    "inertia",
+    "vite",
+    "tailwind",
+    "school-monitoring",
+    "attendance",
+    "education"
+  ],
+  "author": "Awan Mahendra",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/awanmh/PortalSantriCerdas/issues"
   },
   "homepage": "https://github.com/awanmh/PortalSantriCerdas#readme",
   "devDependencies": {
+    "@inertiajs/vue3": "^2.0.0",
+    "@tailwindcss/forms": "^0.5.3",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "autoprefixer": "^10.4.12",
     "laravel-echo": "^2.2.0",
-    "pusher-js": "^8.4.0"
+    "laravel-vite-plugin": "^2.0.1",
+    "postcss": "^8.4.31",
+    "pusher-js": "^8.4.0",
+    "tailwindcss": "^3.2.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4",
+    "vue": "^3.4.0"
+  },
+  "dependencies": {
+    "@heroicons/vue": "^2.2.0"
   }
 }

@@ -4,51 +4,57 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Handle an incoming authentication request.
+     * Tampilkan halaman login (SPA Inertia).
      */
-    public function store(LoginRequest $request): JsonResponse|RedirectResponse
+    public function create(): Response
+    {
+        return Inertia::render('Auth/Login', [
+            'canResetPassword' => Route::has('password.request'),
+            'status' => session('status'),
+        ]);
+    }
+
+    /**
+     * Proses login user.
+     */
+    public function store(LoginRequest $request)
     {
         $request->authenticate();
+        $request->session()->regenerate();
 
-        // HANYA gunakan session untuk permintaan web
-        if (!$request->wantsJson()) {
-            $request->session()->regenerate();
-        }
-
-        // Jika permintaan ingin respons JSON (API request)
-        if ($request->wantsJson()) {
+        // 🔑 Kalau request dari SPA (axios/fetch), balikin JSON
+        if ($request->expectsJson() || $request->wantsJson()) {
             return response()->json([
-                'token' => $request->user()->createToken('api-token')->plainTextToken
+                'message' => 'Login berhasil',
+                'user'    => $request->user(),
             ]);
         }
 
+        // 🔑 Kalau request biasa (form), redirect ke dashboard
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**
-     * Destroy an authenticated session.
+     * Logout user.
      */
-    public function destroy(Request $request): JsonResponse|RedirectResponse
+    public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        // HANYA gunakan session untuk permintaan web
-        if (!$request->wantsJson()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
-
-        // Jika permintaan ingin respons JSON (API request)
-        if ($request->wantsJson()) {
-            return response()->json(['message' => 'Logged out successfully']);
+        // 🔑 Balikin JSON kalau logout dari SPA
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json(['message' => 'Logout berhasil']);
         }
 
         return redirect('/');

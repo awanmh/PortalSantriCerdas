@@ -6,20 +6,20 @@ return [
     |--------------------------------------------------------------------------
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
-    |
-    | Here you may configure your settings for cross-origin resource sharing
-    | or "CORS". This determines what cross-origin operations may execute
-    | in web browsers. You are free to adjust these settings as needed.
-    |
-    | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-    |
     */
 
-    'paths' => ['*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
+    /*
+     * Menambahkan URL aplikasi utama (:8000) di samping URL Vite (:5173).
+     * Ini adalah praktik terbaik untuk memastikan semua interaksi diizinkan.
+     */
+    'allowed_origins' => [
+        'http://127.0.0.1:5173', // Untuk Vite Dev Server
+        'http://127.0.0.1:8000', // Untuk Aplikasi Utama
+    ],
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +29,11 @@ return [
 
     'max_age' => 0,
 
+    /*
+     * WAJIB 'true' agar frontend diizinkan untuk mengirim
+     * dan menerima cookie sesi untuk otentikasi.
+     */
     'supports_credentials' => true,
 
 ];
+

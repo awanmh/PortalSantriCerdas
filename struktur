@@ -43,7 +43,9 @@
 │   │   │   └── JadwalController.php
 │   │   ├── Middleware/
 │   │   │   ├── EnsureEmailsVerified.php
-│   │   │   └── HandleInertiaRequests.php
+│   │   │   ├── ForceStagingDomain.php
+│   │   │   ├── HandleInertiaRequests.php
+│   │   │   └── VerifyCsrfToken.php
 │   │   ├── Request/
 │   │   │   ├── Auth/
 │   │   │   │   └── LoginRequests.php
@@ -149,6 +151,40 @@
 ├── resources/
 │   ├── css/
 │   ├── js/
+│   │   ├── components/
+│   │   │   │   ├── ApplicationLogo.vue
+│   │   │   │   ├── Checkbox.vue
+│   │   │   │   ├── DangerButton.vue
+│   │   │   │   ├── Dropdown.vue
+│   │   │   │   ├── DropdownLink.vue
+│   │   │   │   ├── InputError.vue
+│   │   │   │   ├── InputLabel.vue
+│   │   │   │   ├── Modal.vue
+│   │   │   │   ├── NavLink.vue
+│   │   │   │   ├── PrimaryButton.vue
+│   │   │   │   ├── ResponsiveNavLink.vue
+│   │   │   │   ├── SecondaruButton.vue
+│   │   │   │   └── TextInput.vue
+│   │   ├── Layouts/
+│   │   │   │   ├── AuthenticatedLayout.vue
+│   │   │   │   └── GuestLayout.vue
+│   │   ├── Pages/
+│   │   │   │   ├── Auth/
+│   │   │   │   ├── Dashboard/
+│   │   │   │   │   │   ├── BK.vue
+│   │   │   │   │   │   ├── Guru.vue
+│   │   │   │   │   │   ├── IT.vue
+│   │   │   │   │   │   └── Siswa.vue
+│   │   │   │   ├── Profile/
+│   │   │   │   │   ├── Partials/
+│   │   │   │   │   │   ├── DeleteUserForm.vue
+│   │   │   │   │   │   ├── UpdatePasswordForm.vue
+│   │   │   │   │   │   └── UpdateProfileInformationForm.vue
+│   │   │   │   │   └── Edit.vue
+│   │   │   │   ├── Dashboard.vue
+│   │   │   │   └── Welcome.vue
+│   │   ├── app.js
+│   │   ├── bootstrap.js
 │   │   └── echo.js
 │   └── views/
 │       └── app.blade.php

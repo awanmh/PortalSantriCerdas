@@ -3,45 +3,85 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\Zona;
+use App\Models\AbsensiSiswa;
+use App\Models\Jadwal;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage; // DITAMBAHKAN
+use Illuminate\Validation\Rule;       // DITAMBAHKAN
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Controller AbsensiController untuk Web.
- *
- * Bertanggung jawab untuk menangani request HTTP terkait halaman absensi
- * yang di-render menggunakan Inertia.js (sisi web).
- */
 class AbsensiController extends Controller
 {
     /**
-     * Menampilkan halaman untuk membuat atau melakukan absensi.
-     *
-     * Metode ini mengambil data zona absensi yang sedang aktif dari database.
-     * Data tersebut (latitude, longitude, dan radius) kemudian dikirimkan
-     * sebagai props ke komponen frontend 'Absensi/Create.vue' agar
-     * frontend dapat melakukan validasi lokasi secara real-time.
-     *
-     * @return \Inertia\Response
+     * Menampilkan halaman untuk melakukan absensi berdasarkan jadwal tertentu.
+     * Siswa akan diarahkan ke sini saat mengklik jadwal di dashboard.
      */
-    public function create(): Response
+    public function create(Jadwal $jadwal): Response|RedirectResponse
     {
-        // 1. Ambil satu-satunya zona yang sedang aktif dari database.
-        $zonaAktif = Zona::where('is_active', true)->first();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        // 2. Render komponen Vue 'Absensi/Create.vue' menggunakan Inertia.
+        // Cek apakah siswa sudah melakukan absensi untuk jadwal ini
+        $sudahAbsen = AbsensiSiswa::where('user_id', $user->id)
+            ->where('jadwal_id', $jadwal->id)
+            ->exists();
+            
+        // Jika sudah absen, kembalikan ke dashboard dengan pesan.
+        if ($sudahAbsen) {
+            return redirect()->route('dashboard')->with('info', 'Anda sudah melakukan absensi untuk jadwal ini.');
+        }
+
+        // Jika belum, tampilkan halaman absensi dengan data jadwal yang relevan.
         return Inertia::render('Absensi/Create', [
-            // 3. Kirim data zona aktif sebagai prop ke frontend.
-            // Jika tidak ada zona aktif, kirim null agar frontend bisa
-            // menampilkan pesan error yang sesuai.
-            'zonaAktif' => $zonaAktif ? [
-                'lat'    => (float) $zonaAktif->lat,
-                'lng'    => (float) $zonaAktif->lng,
-                'radius' => (int) $zonaAktif->radius,
-            ] : null,
+            // Eager load relasi untuk efisiensi
+            'jadwal' => $jadwal->load('guru:id,name'),
+            'sudahAbsen' => $sudahAbsen,
         ]);
     }
-}
 
+    /**
+     * Menyimpan data absensi baru ke dalam database, termasuk bukti foto.
+     */
+    public function store(Request $request, Jadwal $jadwal): RedirectResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        // --- VALIDASI DIPERBARUI ---
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['hadir', 'sakit', 'izin'])],
+            'keterangan' => 'nullable|string|max:255',
+            // Bukti foto wajib jika statusnya 'hadir'
+            'bukti_foto' => ['required_if:status,hadir', 'nullable', 'image', 'max:2048'],
+        ]);
+
+        // Mencegah absensi ganda (double check untuk keamanan)
+        if (AbsensiSiswa::where('user_id', $user->id)->where('jadwal_id', $jadwal->id)->exists()) {
+            return redirect()->route('dashboard')->with('error', 'Gagal, Anda sudah absen sebelumnya.');
+        }
+
+        // --- LOGIKA PENYIMPANAN FOTO ---
+        $fotoPath = null;
+        if ($request->hasFile('bukti_foto')) {
+            // Simpan file di storage/app/public/absensi_bukti
+            // Pastikan Anda sudah menjalankan `php artisan storage:link`
+            $fotoPath = $request->file('bukti_foto')->store('absensi_bukti', 'public');
+        }
+
+        // Simpan data absensi ke database
+        AbsensiSiswa::create([
+            'user_id' => $user->id,
+            'jadwal_id' => $jadwal->id,
+            'status' => $validated['status'],
+            'waktu_absensi' => Carbon::now(),
+            'keterangan' => $validated['keterangan'],
+            'bukti_foto_path' => $fotoPath,
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Absensi berhasil dicatat!');
+    }
+}

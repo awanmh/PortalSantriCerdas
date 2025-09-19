@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Broadcast;
 |
 */
 
-// Channel default untuk model User
+// Channel default untuk notifikasi pribadi ke user
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
@@ -22,7 +22,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 // --- CHANNEL UNTUK FITUR LIVE ABSENSI ---
 // Hanya guru/it/bk yang bisa mendengarkan lokasi siswa di kelas tertentu.
 Broadcast::channel('live-absensi.{kelasId}', function ($user, $kelasId) {
-    if ($user->hasRole(['guru', 'it', 'bk'])) {
+    if ($user->hasAnyRole(['guru', 'it', 'bk'])) {
         // Logika lebih lanjut bisa ditambahkan di sini,
         // misalnya, cek apakah guru ini adalah wali kelas dari kelasId.
         return true;
@@ -31,7 +31,7 @@ Broadcast::channel('live-absensi.{kelasId}', function ($user, $kelasId) {
 });
 
 
-// --- CHANNEL UNTUK NOTIFIKASI PRIBADI ---
+// --- CHANNEL UNTUK NOTIFIKASI PRIBADI SPESIFIK ---
 // Hanya user yang bersangkutan yang bisa menerima notifikasi ini.
 
 Broadcast::channel('absensi.terlambat.{userId}', function (User $user, $userId) {
@@ -45,4 +45,3 @@ Broadcast::channel('pelanggaran.baru.{userId}', function (User $user, $userId) {
 Broadcast::channel('jadwal.akan-dimulai.{userId}', function (User $user, $userId) {
     return (int) $user->id === (int) $userId;
 });
-

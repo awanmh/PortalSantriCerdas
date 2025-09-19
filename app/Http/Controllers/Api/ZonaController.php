@@ -18,13 +18,16 @@ class ZonaController extends Controller
 
     public function store(Request $request)
     {
-        // Menggunakan kolom 'nama_zona', 'lat', 'lng' yang sesuai migrasi
         $validator = Validator::make($request->all(), [
-            'nama_zona' => 'required|string|max:255',
-            'lat'       => 'required|numeric',
-            'lng'       => 'required|numeric',
-            'radius'    => 'required|numeric|min:10|max:500',
-            'is_active' => 'boolean'
+            'nama_zona'  => 'required|string|max:255',
+            'lat'        => 'required|numeric',
+            'lng'        => 'required|numeric',
+            'radius'     => 'required|numeric|min:10|max:500',
+            'is_active'  => 'boolean',
+            'name'       => 'nullable|string|max:255',
+            'polygon'    => 'nullable|string',
+            'description'=> 'nullable|string',
+            'color'      => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
         if ($validator->fails()) {
@@ -34,17 +37,16 @@ class ZonaController extends Controller
             ], 422);
         }
 
-        if ($request->is_active) {
+        // hanya boleh ada 1 zona aktif
+        if ($request->boolean('is_active')) {
             Zona::where('is_active', true)->update(['is_active' => false]);
         }
 
-        $zona = Zona::create($request->all());
+        $zona = Zona::create($validator->validated());
 
         return response()->json([
             'message' => 'Zona berhasil ditambahkan',
             'data' => $zona
         ], 201);
     }
-
-    // ... method update dan destroy ...
 }

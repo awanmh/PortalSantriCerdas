@@ -2,92 +2,112 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        // Buat permissions (hanya jika belum ada)
+        // Reset cached roles and permissions
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // ====== Definisi permissions ======
         $permissions = [
             // Absensi
-            'absensi-siswa-create',
-            'absensi-siswa-view',
-            'absensi-guru-create',
-            'absensi-guru-view',
-            'absensi-bk-view',
+            'create absensi siswa',
+            'view absensi siswa',
+            'create absensi guru',
+            'view absensi guru',
+            'view absensi bk',
 
             // Zona
-            'zona-manage',
-            'zona-view',
+            'manage zona',
+            'view zona',
 
-            // Pelanggaran
-            'pelanggaran-create',
-            'pelanggaran-view',
-            'pelanggaran-manage',
+            // Pelanggaran (dibuat lebih spesifik)
+            'create catatan pelanggaran',
+            'view catatan pelanggaran',
+            'update catatan pelanggaran',
+            'delete catatan pelanggaran',
 
-            // Kelas
-            'kelas-view',
-            'kelas-manage',
+            // Kelas & Jurusan
+            'view kelas',
+            'manage kelas',
+            'manage jurusan',
 
             // Jadwal
-            'jadwal-view',
-            'jadwal-manage',
+            'view jadwal',
+            'manage jadwal',
 
             // User
-            'user-view',
-            'user-manage',
+            'view users',
+            'manage users',
+            
+            // Laporan
+            'view laporan absensi',
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
 
-        // Buat role dan assign permissions (hanya jika belum ada)
+        // ====== Definisi roles ======
         $siswa = Role::firstOrCreate(['name' => 'siswa']);
+        $guru  = Role::firstOrCreate(['name' => 'guru']);
+        $bk    = Role::firstOrCreate(['name' => 'bk']);
+        $it    = Role::firstOrCreate(['name' => 'it']);
+
+        // ====== Mapping role -> permission ======
         $siswa->syncPermissions([
-            'absensi-siswa-create',
-            'absensi-siswa-view',
-            'jadwal-view',
-            'kelas-view'
+            'create absensi siswa',
+            'view absensi siswa',
+            'view jadwal',
+            'view kelas',
         ]);
 
-        $guru = Role::firstOrCreate(['name' => 'guru']);
         $guru->syncPermissions([
-            'absensi-guru-create',
-            'absensi-guru-view',
-            'absensi-siswa-view',
-            'pelanggaran-create',
-            'jadwal-view',
-            'kelas-view'
+            'create absensi guru',
+            'view absensi guru',
+            'view absensi siswa',
+            'create catatan pelanggaran', // Guru hanya bisa membuat
+            'view catatan pelanggaran',
+            'view jadwal',
+            'view kelas',
+            'view laporan absensi',
         ]);
 
-        $it = Role::firstOrCreate(['name' => 'it']);
-        $it->syncPermissions([
-            'zona-manage',
-            'absensi-guru-view',
-            'absensi-siswa-view',
-            'pelanggaran-view',
-            'kelas-manage',
-            'user-manage'
-        ]);
-
-        $bk = Role::firstOrCreate(['name' => 'bk']);
         $bk->syncPermissions([
-            'pelanggaran-view',
-            'pelanggaran-manage',
-            'absensi-siswa-view',
-            'absensi-guru-view',
-            'jadwal-view',
-            'kelas-view'
+            'create catatan pelanggaran', // BK bisa melakukan semuanya
+            'view catatan pelanggaran',
+            'update catatan pelanggaran',
+            'delete catatan pelanggaran',
+            'view absensi siswa',
+            'view absensi guru',
+            'view jadwal',
+            'view kelas',
+            'view laporan absensi',
         ]);
 
-        // Assign role default ke user admin (hanya jika belum memiliki role)
-        $user = \App\Models\User::first();
-        if ($user && !$user->hasRole(['siswa', 'guru', 'it', 'bk'])) {
-            $user->assignRole('it');
+        // IT sebagai super admin → semua permission
+        $it->syncPermissions(Permission::all());
+
+        // ====== User default ======
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@smkalikhlash.sch.id'],
+            [
+                'name' => 'Admin IT',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        if (!$admin->hasRole('it')) {
+            $admin->assignRole('it');
         }
     }
 }
+

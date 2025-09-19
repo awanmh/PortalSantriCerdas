@@ -4,26 +4,34 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateKelasTable extends Migration
+// Nama class disesuaikan dengan konvensi nama file
+return new class extends Migration
 {
-    // database/migrations/2025_08_12_145226_create_kelas_table.php
-public function up()
-{
-    Schema::create('kelas', function (Blueprint $table) {
-        $table->id();
-        $table->string('nama_kelas');
-        $table->integer('tingkat'); // <--- TAMBAHKAN BARIS INI
-        $table->string('jurusan');
-
-        // Kolom wali_kelas dipindahkan ke migrasi lain
-        // $table->string('wali_kelas');
-
-        $table->timestamps();
-    });
-}
-    public function down()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        Schema::dropIfExists('kelas_user');
+        Schema::create('kelas', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_kelas');
+            $table->enum('jenjang', ['X', 'XI', 'XII']);
+
+            // MENGGUNAKAN FOREIGN KEY, BUKAN STRING
+            $table->foreignId('jurusan_id')->constrained('jurusan')->onDelete('cascade');
+            
+            // Relasi ke wali kelas (user dengan role 'guru')
+            $table->foreignId('wali_kelas_id')->nullable()->constrained('users')->onDelete('set null');
+
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
         Schema::dropIfExists('kelas');
     }
-}
+};

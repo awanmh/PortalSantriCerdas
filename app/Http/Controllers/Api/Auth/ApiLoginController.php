@@ -3,47 +3,64 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Exception;
 
 class ApiLoginController extends Controller
 {
     /**
-     * Handle an incoming authentication request for the API.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * Menangani permintaan login dari API menggunakan token.
      */
     public function store(Request $request)
     {
+        // 1. Validasi input
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+            'email'    => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        // 2. Cari user berdasarkan email
+        $user = User::where('email', $request->email)->first();
+
+        // 3. Verifikasi user dan password
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials do not match our records.'],
+                'email' => ['Email atau password yang Anda masukkan salah.'],
             ]);
         }
 
-        // Dapatkan user yang sedang login
-        $user = $request->user();
-
-        // Buat token Sanctum untuk user tersebut
+        // 4. Hapus token lama dan buat token baru (best practice)
+        $user->tokens()->delete();
         $token = $user->createToken('api-token')->plainTextToken;
 
-        // Kembalikan token dan data user sebagai respons JSON
+        // 5. Kirim respons sukses dengan token dan data user
         return response()->json([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
+            'status'  => 'success',
+            'message' => 'Login berhasil!',
+            'token'   => $token,
+            'user'    => [
+                'id'    => $user->id,
+                'name'  => $user->name,
                 'email' => $user->email,
                 'roles' => $user->getRoleNames(),
-            ]
+            ],
+        ]);
+    }
+
+    /**
+     * Menangani logout dari API dengan menghapus token.
+     */
+    public function logout(Request $request)
+    {
+        // Hapus token yang sedang digunakan untuk request ini
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Logout berhasil',
         ]);
     }
 }

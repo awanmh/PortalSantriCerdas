@@ -1,5 +1,5 @@
-import defaultTheme from 'tailwindcss/defaultTheme';
-import forms from '@tailwindcss/forms';
+import defaultTheme from 'tailwindcss/defaultTheme'
+import forms from '@tailwindcss/forms'
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -13,10 +13,12 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Nunito', ...defaultTheme.fontFamily.sans], // Body text default
+                pesantren: ['"Scheherazade New"', 'serif'], // Heading / judul ala pesantren
+                body: ['Nunito', 'sans-serif'], // alias untuk body
             },
         },
     },
 
     plugins: [forms],
-};
+}

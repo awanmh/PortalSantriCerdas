@@ -17,12 +17,27 @@ return Application::configure(basePath: dirname(__DIR__))
         ['prefix' => 'api', 'middleware' => ['auth:sanctum']]
     )
     ->withMiddleware(function (Middleware $middleware) {
+        
+        // Mendaftarkan alias middleware untuk seluruh aplikasi.
+        $middleware->alias([
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            // --- ALIAS BARU UNTUK FITUR WAJIB UPLOAD FOTO ---
+            'profile.photo' => \App\Http\Middleware\EnsureProfilePhotoIsUploaded::class,
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // --- MIDDLEWARE BARU DITERAPKAN DI SINI ---
+        // Menambahkan middleware ke grup 'web' agar berjalan pada setiap request web
+        // setelah sesi dimulai, memastikan pengguna siswa selalu dicek fotonya.
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\EnsureProfilePhotoIsUploaded::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

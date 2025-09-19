@@ -6,20 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Jalankan migrasi.
+     */
     public function up(): void
     {
         Schema::create('catatan_pelanggaran', function (Blueprint $table) {
             $table->id();
-            $table->string('siswa'); // Input manual, bukan foreign key
-            $table->string('guru_bk'); // Input manual, bukan foreign key
+
+            // Menghubungkan ke siswa (user dengan peran siswa)
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            
+            // Menghubungkan ke pelapor (user dengan peran guru/bk/it)
+            $table->foreignId('pelapor_id')->constrained('users')->onDelete('cascade');
+            
+            $table->string('jenis');
             $table->text('deskripsi');
-            $table->text('tindak_lanjut')->nullable();
-            $table->string('tingkat')->default('ringan'); // ringan, sedang, berat
-            $table->date('tanggal')->default(now());
+            $table->integer('poin')->default(1); // Kolom poin yang hilang
+            $table->date('tanggal');
+            
             $table->timestamps();
         });
     }
 
+    /**
+     * Batalkan migrasi.
+     */
     public function down(): void
     {
         Schema::dropIfExists('catatan_pelanggaran');

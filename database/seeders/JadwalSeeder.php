@@ -5,19 +5,16 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Jadwal;
 use App\Models\Kelas;
-use App\Models\Jurusan;
 use App\Models\User;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class JadwalSeeder extends Seeder
 {
     public function run(): void
     {
         // 1. Pastikan data dasar sudah ada
-        if (!Kelas::exists() || !Jurusan::exists()) {
-            $this->command->warn('⚠️ Seeder Jadwal gagal: Kelas atau Jurusan belum ada.');
-            $this->command->info('💡 Silakan jalankan seeder Kelas dan Jurusan terlebih dahulu.');
+        if (!Kelas::exists()) {
+            $this->command->warn('⚠️ Seeder Jadwal gagal: Data Kelas belum ada.');
             return;
         }
 
@@ -25,93 +22,94 @@ class JadwalSeeder extends Seeder
         $gurus = User::role('guru')->get();
         if ($gurus->isEmpty()) {
             $this->command->warn('⚠️ Seeder Jadwal gagal: Tidak ada user dengan role guru.');
-            $this->command->info('💡 Silakan buat user dengan role guru terlebih dahulu.');
             return;
         }
 
-        // 3. Buat jadwal pelajaran untuk semua kelas
+        // 3. Hapus jadwal lama untuk menghindari duplikasi
+        Jadwal::truncate();
+
+        // 4. Buat jadwal pelajaran untuk semua kelas
         $this->buatJadwalPelajaran($gurus);
 
-        // 4. Buat event untuk kalender sekolah
+        // 5. Buat event untuk kalender sekolah
         $this->buatEventSekolah($gurus);
 
         $this->command->info('✅ Seeder Jadwal berhasil dijalankan!');
     }
 
+    /**
+     * Membuat jadwal pelajaran dummy untuk 5 hari kerja ke depan.
+     */
     private function buatJadwalPelajaran($gurus)
     {
-        $kelas = Kelas::all();
-        $jurusan = Jurusan::all();
+        $kelasCollection = Kelas::all();
         $mataPelajaran = [
-            'Matematika', 'Bahasa Indonesia', 'Bahasa Inggris', 'IPA', 'IPS',
-            'Seni Budaya', 'PJOK', 'PPKn', 'TIK', 'Agama'
+            'Matematika Wajib', 'Bahasa Indonesia', 'Bahasa Inggris', 'Fisika', 'Kimia',
+            'Sejarah Indonesia', 'PJOK', 'PPKn', 'Dasar Desain Grafis', 'Pendidikan Agama'
         ];
-        $hari = ['senin', 'selasa', 'rabu', 'kamis', 'jumat'];
-        $today = Carbon::today();
         $totalPelajaran = 0;
+        $tanggalSekarang = Carbon::now()->startOfWeek(); // Mulai dari hari Senin minggu ini
 
-        foreach ($kelas as $k) {
-            foreach ($hari as $day) {
-                $dayOfWeek = array_search($day, ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu']);
-                $date = $today->copy()->next($dayOfWeek + 1);
+        // Loop untuk 5 hari kerja (Senin - Jumat)
+        for ($hari = 0; $hari < 5; $hari++) {
+            $tanggalJadwal = $tanggalSekarang->copy()->addDays($hari);
 
-                for ($i = 1; $i <= 4; $i++) {
-                    $jamMulai = sprintf('%02d:00:00', 7 + ($i - 1) * 2);
-                    $jamSelesai = sprintf('%02d:30:00', 8 + ($i - 1) * 2);
+            foreach ($kelasCollection as $k) {
+                // Buat 4 sesi pelajaran per hari untuk setiap kelas
+                for ($sesi = 1; $sesi <= 4; $sesi++) {
+                    $jamMulai = Carbon::createFromTime(7, 0, 0)->addHours($sesi - 1)->addMinutes(($sesi - 1) * 30);
+                    $jamSelesai = $jamMulai->copy()->addMinutes(90); // Durasi 90 menit
 
                     Jadwal::create([
                         'mata_pelajaran' => $mataPelajaran[array_rand($mataPelajaran)],
-                        'deskripsi' => 'Pembelajaran ' . $mataPelajaran[array_rand($mataPelajaran)] . ' untuk kelas ' . $k->nama_kelas,
-                        'tanggal' => $date->format('Y-m-d'),
-                        'jam_mulai' => $jamMulai,
-                        'jam_selesai' => $jamSelesai,
-                        'guru_id' => $gurus->random()->id,
-                        'kelas_id' => $k->id,
-                        'jurusan_id' => $jurusan->random()->id,
-                        'jenjang' => $k->tingkat,
-                        'tipe' => 'pelajaran',
+                        'deskripsi'      => 'Pembelajaran reguler di kelas.',
+                        'tanggal'        => $tanggalJadwal->toDateString(),
+                        'jam_mulai'      => $jamMulai->toTimeString(),
+                        'jam_selesai'    => $jamSelesai->toTimeString(),
+                        'guru_id'        => $gurus->random()->id,
+                        'kelas_id'       => $k->id,
+                        // DIHAPUS: jurusan_id dan jenjang karena sudah ada di relasi Kelas
+                        'tipe'           => 'pelajaran',
                     ]);
                     $totalPelajaran++;
                 }
             }
         }
-        $this->command->info(" • {$totalPelajaran} jadwal pelajaran berhasil dibuat");
+        $this->command->info("   > {$totalPelajaran} jadwal pelajaran berhasil dibuat.");
     }
 
+    /**
+     * Membuat event sekolah dummy dalam 30 hari ke depan.
+     */
     private function buatEventSekolah($gurus)
     {
-        $kelas = Kelas::all();
-        $jurusan = Jurusan::all();
         $eventTypes = [
-            'Pelatihan' => 'Pelatihan penggunaan laboratorium komputer',
-            'Seminar' => 'Seminar karir dengan alumni',
-            'Lomba' => 'Lomba cerdas cermat antar kelas',
-            'Ekstrakurikuler' => 'Ekstrakurikuler pramuka',
-            'Kegiatan' => 'Kegiatan bakti sosial',
-            'Ujian' => 'Ujian tengah semester',
-            'Pertemuan' => 'Pertemuan orang tua murid'
+            'Rapat Wali Murid' => 'Pembahasan perkembangan akademik semester ganjil.',
+            'Seminar Karir' => 'Seminar motivasi bersama praktisi industri.',
+            'Class Meeting' => 'Lomba persahabatan antar kelas.',
+            'Ujian Tengah Semester' => 'Pelaksanaan Ujian Tengah Semester untuk semua jenjang.',
+            'Peringatan Hari Besar' => 'Upacara dan kegiatan dalam rangka memperingati hari besar nasional.'
         ];
         $totalEvent = 0;
         $today = Carbon::today();
 
-        for ($i = 0; $i < 15; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $randomDate = $today->copy()->addDays(rand(1, 30));
             $eventType = array_rand($eventTypes);
 
             Jadwal::create([
                 'mata_pelajaran' => $eventType, // Menyimpan nama event di kolom mata_pelajaran
-                'deskripsi' => $eventTypes[$eventType],
-                'tanggal' => $randomDate->format('Y-m-d'),
-                'jam_mulai' => sprintf('%02d:00:00', rand(8, 15)),
-                'jam_selesai' => sprintf('%02d:00:00', rand(16, 18)),
-                'guru_id' => $gurus->random()->id,
-                'kelas_id' => $kelas->random()->id,
-                'jurusan_id' => $jurusan->random()->id,
-                'jenjang' => strval(rand(10, 12)),
-                'tipe' => 'event',
+                'deskripsi'      => $eventTypes[$eventType],
+                'tanggal'        => $randomDate->toDateString(),
+                'jam_mulai'      => '08:00:00',
+                'jam_selesai'    => '11:00:00',
+                // Membuat beberapa event tidak terikat guru/kelas spesifik (acara umum)
+                'guru_id'        => rand(0, 1) ? $gurus->random()->id : null,
+                'kelas_id'       => null, // Event umum tidak terikat pada satu kelas
+                'tipe'           => 'acara',
             ]);
             $totalEvent++;
         }
-        $this->command->info(" • {$totalEvent} event sekolah berhasil dibuat");
+        $this->command->info("   > {$totalEvent} event sekolah berhasil dibuat.");
     }
 }

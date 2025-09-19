@@ -1,52 +1,84 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Web\AbsensiController;   // 1. Impor AbsensiController
-use App\Http\Controllers\Web\DashboardController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\AbsensiController;
+use App\Http\Controllers\Web\CatatanPelanggaranController;
+use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\JurusanController;
+use App\Http\Controllers\Web\KelasController;
+use App\Http\Controllers\Web\JadwalController;
+use App\Http\Controllers\Web\LaporanAbsensiController;
+use App\Http\Controllers\Web\LiveMapController;
+use App\Http\Controllers\Web\UserController;
+use App\Http\Controllers\Web\ZonaController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Rute-rute ini dimuat oleh RouteServiceProvider dalam grup yang
-| berisi middleware "web". Rute-rute ini menggunakan sesi.
-|
 */
 
-// Rute untuk halaman selamat datang (halaman utama sebelum login)
+/**
+ * Rute Halaman Utama (Publik)
+ */
 Route::get('/', function () {
-    // Arahkan ke halaman login jika pengguna belum terautentikasi
-    if (auth()->check()) {
-        return redirect()->route('dashboard');
-    }
-    return Inertia::render('Auth/Login', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-    ]);
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : Inertia::render('Welcome');
+})->name('home');
+
+/**
+ * Grup rute yang memerlukan otentikasi dan verifikasi email.
+ */
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    // --- RUTE UMUM PENGGUNA ---
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [ProfileController::class, 'edit'])->name('edit');
+        Route::post('/', [ProfileController::class, 'update'])->name('update');
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
+    });
+
+    // --- RUTE SPESIFIK SISWA ---
+    Route::middleware('role:siswa')->prefix('absen/{jadwal}')->name('absen.')->group(function () {
+        Route::get('/create', [AbsensiController::class, 'create'])->name('create');
+        Route::post('/', [AbsensiController::class, 'store'])->name('store');
+    });
+
+    // --- RUTE UMUM UNTUK GURU, BK, & IT ---
+    Route::resource('catatan-pelanggaran', CatatanPelanggaranController::class)
+        ->except(['show'])
+        ->middleware('role:guru|bk|it');
+
+    Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'index'])
+        ->name('laporan.absensi.index')
+        ->middleware('can:view laporan absensi');
+
+    Route::get('/live-map', [LiveMapController::class, 'index'])
+        ->name('live-map.index')
+        ->middleware('role:guru|bk|it');
+
+    // --- GRUP RUTE KHUSUS ADMIN / IT ---
+    Route::prefix('admin')->name('admin.')->middleware('role:it')->group(function() {
+        Route::resource('users', UserController::class)->except(['show'])->middleware('can:manage users');
+        Route::resource('zona', ZonaController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('can:manage zona');
+        Route::resource('jurusan', JurusanController::class)->except(['show', 'create', 'edit'])->middleware('can:manage jurusan');
+        Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->middleware('can:manage kelas');
+        Route::resource('jadwal', JadwalController::class)->except(['show', 'create', 'edit'])->middleware('can:manage jadwal');
+            
+        // Laporan Absensi (versi Admin dengan nama rute yang unik)
+        Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'index'])
+            ->name('admin.laporan.absensi.index') // <-- NAMA DIPERBAIKI
+            ->middleware('can:view laporan absensi');
+    });
 });
 
-// Rute /dashboard yang diarahkan ke DashboardController
-// Ini memastikan data peran pengguna dikirim ke frontend.
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
-// 2. Tambahkan rute untuk menampilkan halaman Absensi GPS
-Route::get('/absen/create', [AbsensiController::class, 'create'])
-    ->middleware(['auth', 'verified'])
-    ->name('absen.create');
-
-// Rute standar Breeze untuk manajemen profil pengguna
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-// Memuat rute-rute autentikasi dari Breeze (login, register, dll.)
+/**
+ * Memuat rute-rute otentikasi dari file terpisah.
+ */
 require __DIR__.'/auth.php';
 

@@ -1,70 +1,116 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
-import { ShieldExclamationIcon, DocumentTextIcon, ChartPieIcon } from '@heroicons/vue/24/outline';
-import { useDashboard } from '@/Composables/useDashboard';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StatCard from '@/Components/StatCard.vue';
+import PanelLink from '@/Components/PanelLink.vue';
+import { Head, Link } from '@inertiajs/vue3';
+import {
+    ShieldExclamationIcon,
+    ClipboardDocumentListIcon,
+    UsersIcon,
+    DocumentChartBarIcon,
+} from "@heroicons/vue/24/outline";
 
-// Menggunakan Composable untuk semua logika data fetching
-const { data: dashboardData, isLoading, error: errorMsg } = useDashboard();
+// Menerima props dari DashboardController
+const props = defineProps({
+    stats: {
+        type: Object,
+        required: true,
+    },
+    pelanggaranTerbaru: {
+        type: Array,
+        required: true,
+    },
+    siswaBermasalah: {
+        type: Array,
+        required: true,
+    },
+});
+
 </script>
 
 <template>
-    <div class="space-y-6">
-        <!-- Tampilan Loading atau Error -->
-        <div v-if="isLoading" class="text-center py-10 text-gray-500">Memuat data...</div>
-        <div v-else-if="errorMsg" class="p-4 bg-red-100 text-red-700 rounded-lg text-center">{{ errorMsg }}</div>
+    <Head title="Dashboard BK" />
 
-        <!-- Konten Dashboard Utama -->
-        <div v-else-if="dashboardData" class="space-y-8">
-             <!-- Statistik Pelanggaran -->
-            <div>
-                <h3 class="font-semibold text-xl mb-4 text-gray-700 flex items-center">
-                    <ChartPieIcon class="h-6 w-6 mr-2" />
-                    Statistik Pelanggaran
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-red-600">{{ dashboardData.pelanggaran_hari_ini }}</div>
-                        <div class="text-sm font-medium text-gray-500">Pelanggaran Hari Ini</div>
+    <AuthenticatedLayout>
+        <template #header>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                Dashboard Bimbingan Konseling
+            </h2>
+        </template>
+        
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+                <!-- Bagian Statistik dan Aksi Cepat -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard label="Pelanggaran Hari Ini" :value="stats.pelanggaran_hari_ini" color="text-red-500" />
+                    <StatCard label="Total Poin Hari Ini" :value="stats.total_poin_hari_ini" color="text-orange-500" />
+                    
+                    <PanelLink
+                        :href="route('catatan-pelanggaran.index')"
+                        title="Catat Pelanggaran"
+                        description="Buka halaman untuk mencatat pelanggaran baru."
+                        color="text-red-500"
+                        class="lg:col-span-1"
+                    >
+                        <template #icon><ClipboardDocumentListIcon class="w-8 h-8" /></template>
+                    </PanelLink>
+                    <PanelLink
+                        :href="route('laporan.absensi.index')"
+                        title="Laporan Absensi"
+                        description="Lihat rekapitulasi kehadiran semua siswa."
+                        color="text-blue-500"
+                        class="lg:col-span-1"
+                    >
+                        <template #icon><DocumentChartBarIcon class="w-8 h-8" /></template>
+                    </PanelLink>
+                </div>
+
+                <!-- Bagian Daftar Pelanggaran & Siswa Bermasalah -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Kolom Pelanggaran Terbaru -->
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                                <ClipboardDocumentListIcon class="w-6 h-6 mr-2 text-yellow-500" />
+                                Pelanggaran Terbaru
+                            </h3>
+                            <div v-if="pelanggaranTerbaru.length > 0" class="space-y-3">
+                                <div v-for="item in pelanggaranTerbaru" :key="item.id" class="text-sm border-b dark:border-gray-700 pb-2 last:border-b-0">
+                                    <p class="font-semibold text-gray-900 dark:text-gray-100">{{ item.siswa.name }}</p>
+                                    <p class="text-gray-600 dark:text-gray-400">{{ item.jenis }} ({{ item.poin }} poin)</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">Dilaporkan oleh {{ item.pelapor.name }}</p>
+                                </div>
+                            </div>
+                            <div v-else class="text-center py-10 text-gray-500 dark:text-gray-400">
+                                <p>Tidak ada catatan pelanggaran baru.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-yellow-500">{{ dashboardData.pelanggaran_bulan_ini }}</div>
-                        <div class="text-sm font-medium text-gray-500">Pelanggaran Bulan Ini</div>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-gray-700">{{ dashboardData.total_poin_pelanggaran }}</div>
-                        <div class="text-sm font-medium text-gray-500">Total Poin</div>
+
+                    <!-- Kolom Siswa Perlu Perhatian -->
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                                <UsersIcon class="w-6 h-6 mr-2 text-red-500" />
+                                Siswa Perlu Perhatian (Poin Tertinggi)
+                            </h3>
+                            <div v-if="siswaBermasalah.length > 0" class="space-y-3">
+                               <div v-for="siswa in siswaBermasalah" :key="siswa.id" class="flex justify-between items-center text-sm border-b dark:border-gray-700 pb-2 last:border-b-0">
+                                    <p class="font-semibold text-gray-900 dark:text-gray-100">{{ siswa.name }}</p>
+                                    <span class="font-bold bg-red-100 text-red-800 px-2 py-1 rounded-md">
+                                        {{ siswa.total_poin || 0 }} Poin
+                                    </span>
+                               </div>
+                            </div>
+                             <div v-else class="text-center py-10 text-gray-500 dark:text-gray-400">
+                                <p>Tidak ada siswa dengan poin pelanggaran yang signifikan.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Daftar Pelanggaran Terbaru -->
-            <div class="bg-white p-5 rounded-xl shadow-md">
-                <h3 class="font-bold text-lg text-gray-800 mb-4 flex items-center">
-                    <DocumentTextIcon class="h-6 w-6 mr-2 text-gray-500" />
-                    Catatan Pelanggaran Terbaru
-                </h3>
-                <div v-if="dashboardData.pelanggaran_terbaru && dashboardData.pelanggaran_terbaru.length > 0" class="space-y-4">
-                    <div v-for="item in dashboardData.pelanggaran_terbaru" :key="item.id" class="border-b pb-3 last:border-b-0">
-                        <p class="font-semibold text-gray-800">{{ item.siswa.name }} - <span class="font-normal text-gray-600">{{ item.jenis_pelanggaran }}</span></p>
-                        <p class="text-sm text-gray-500 mt-1">{{ item.deskripsi }}</p>
-                        <p class="text-xs text-gray-400 mt-1">Dicatat pada: {{ new Date(item.tanggal).toLocaleDateString('id-ID') }}</p>
-                    </div>
-                </div>
-                <div v-else>
-                    <p class="text-gray-500">Belum ada catatan pelanggaran baru.</p>
-                </div>
-            </div>
-
-            <!-- Tombol Aksi Cepat -->
-            <div class="text-center pt-4">
-                 <Link
-                    :href="route('catatan-pelanggaran.create')"
-                    class="inline-flex items-center justify-center w-full sm:w-auto px-10 py-4 bg-red-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-red-700 transition-transform transform hover:scale-105"
-                >
-                    <ShieldExclamationIcon class="h-6 w-6 mr-3" />
-                    Catat Pelanggaran Baru
-                </Link>
             </div>
         </div>
-    </div>
+    </AuthenticatedLayout>
 </template>

@@ -4,77 +4,95 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\UsersImport;
+use Illuminate\Support\Facades\Storage;
 
 class UserManagementController extends Controller
 {
     /**
-     * Import data user dari file Excel
+     * Menampilkan daftar pengguna, dengan opsi filter berdasarkan peran.
      */
-    public function importUsers(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'file' => 'required|mimes:xlsx,xls,csv'
-        ]);
+        $query = User::query();
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
+        if ($request->has('role')) {
+            $query->whereHas('roles', function ($q) use ($request) {
+                $q->where('name', $request->role);
+            });
         }
 
-        try {
-            Excel::import(new UsersImport, $request->file('file'));
+        // ambil lebih banyak field biar frontend bisa render
+        $users = $query->with('roles:name')
+            ->orderBy('name', 'asc')
+            ->get(['id','name','email','role_keyword','foto']);
 
-            return response()->json([
-                'message' => 'Data user berhasil diimport'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Gagal mengimport data',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json($users);
     }
 
     /**
-     * Upload foto profil user
+     * Menampilkan detail user.
      */
-    public function uploadProfilePicture(Request $request, $id)
+    public function show(string $id): JsonResponse
     {
-        $user = User::find($id);
+        $user = User::with('roles:name','kelas')->findOrFail($id);
+        return response()->json($user);
+    }
 
-        if (!$user) {
-            return response()->json(['message' => 'User tidak ditemukan'], 404);
-        }
+    /**
+     * Update data user.
+     */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,'.$user->id,
+            'password' => 'nullable|string|min:8',
+            'role_keyword' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validasi gagal',
+                'message' => 'Validasi gagal.',
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Hapus foto lama jika ada
-        if ($user->foto && file_exists(public_path('storage/' . $user->foto))) {
-            unlink(public_path('storage/' . $user->foto));
+        $data = $validator->validated();
+
+        if (!empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
         }
 
-        // Simpan foto baru
-        $fotoPath = $request->file('foto')->store('profile', 'public');
-        $user->update(['foto' => $fotoPath]);
+        $user->update($data);
 
         return response()->json([
-            'message' => 'Foto profil berhasil diupload',
-            'foto_url' => asset('storage/' . $fotoPath)
+            'message' => 'User berhasil diperbarui.',
+            'user' => $user
         ]);
+    }
+
+    /**
+     * Hapus user.
+     */
+    public function destroy(string $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+
+        // hapus foto profil kalau ada
+        if ($user->foto) {
+            Storage::disk('public')->delete($user->foto);
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'User berhasil dihapus.']);
     }
 }

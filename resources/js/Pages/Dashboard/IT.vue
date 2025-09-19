@@ -1,76 +1,145 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
-import { UserCircleIcon, MapPinIcon, DocumentArrowDownIcon, Cog6ToothIcon, ServerIcon } from '@heroicons/vue/24/outline';
-import { useDashboard } from '@/Composables/useDashboard';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StatCard from '@/Components/StatCard.vue';
+import PanelLink from '@/Components/PanelLink.vue';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import {
+    UserGroupIcon,
+    MapPinIcon,
+    ServerIcon,
+    Cog6ToothIcon,
+    AcademicCapIcon,
+    BuildingOffice2Icon,
+    CalendarDaysIcon,
+    DocumentChartBarIcon,
+} from "@heroicons/vue/24/outline";
 
-// Menggunakan Composable untuk semua logika data fetching
-const { data: dashboardData, isLoading, error: errorMsg } = useDashboard();
+// Menerima props dari DashboardController
+const props = defineProps({
+    stats: {
+        type: Object,
+        required: true,
+    },
+});
+
+// Mengambil data user dari props global Inertia
+const user = computed(() => usePage().props.auth.user);
+const userName = computed(() => user.value?.name || 'Admin');
 </script>
 
 <template>
-    <div class="space-y-6">
-        <!-- Tampilan Loading atau Error -->
-        <div v-if="isLoading" class="text-center py-10 text-gray-500">Memuat data...</div>
-        <div v-else-if="errorMsg" class="p-4 bg-red-100 text-red-700 rounded-lg text-center">{{ errorMsg }}</div>
+    <Head title="Dashboard Admin" />
 
-        <!-- Konten Dashboard Utama -->
-        <div v-else-if="dashboardData" class="space-y-8">
-            <!-- Statistik Sistem -->
-            <div>
-                <h3 class="font-semibold text-xl mb-4 text-gray-700 flex items-center">
-                    <ServerIcon class="h-6 w-6 mr-2" />
-                    Statistik Sistem
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-blue-600">{{ dashboardData.total_pengguna }}</div>
-                        <div class="text-sm font-medium text-gray-500">Total Pengguna</div>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-green-600">{{ dashboardData.total_siswa }}</div>
-                        <div class="text-sm font-medium text-gray-500">Siswa</div>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-yellow-500">{{ dashboardData.total_guru }}</div>
-                        <div class="text-sm font-medium text-gray-500">Guru & BK</div>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-lg shadow-sm">
-                        <div class="text-3xl font-bold text-purple-600">{{ dashboardData.zona_aktif }}</div>
-                        <div class="text-sm font-medium text-gray-500">Zona Aktif</div>
-                    </div>
-                </div>
-            </div>
+    <AuthenticatedLayout>
+        <!-- Header Halaman (dimasukkan ke slot 'header' di AuthenticatedLayout) -->
+        <template #header>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                Dashboard Admin IT
+            </h2>
+        </template>
+        
+        <!-- Konten Utama (dimasukkan ke slot default di AuthenticatedLayout) -->
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 md:p-8 space-y-8">
+                        
+                        <!-- Bagian Welcome Message -->
+                        <section>
+                            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                Selamat Datang, {{ userName }}!
+                            </h1>
+                            <p class="mt-1 text-md text-gray-600 dark:text-gray-400">
+                                Ini adalah pusat kendali sistem Anda. Kelola semua data master dari sini.
+                            </p>
+                        </section>
 
-            <!-- Panel Manajemen -->
-            <div>
-                <h3 class="font-semibold text-xl mb-4 text-gray-700 flex items-center">
-                    <Cog6ToothIcon class="h-6 w-6 mr-2" />
-                    Panel Manajemen
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Link :href="route('users.index')" class="flex items-center p-4 bg-white rounded-lg shadow-md hover:bg-gray-50 transition">
-                        <UserCircleIcon class="h-8 w-8 text-blue-500 mr-4" />
-                        <div>
-                            <p class="font-semibold text-gray-800">Manajemen Pengguna</p>
-                            <p class="text-sm text-gray-500">Kelola akun siswa, guru, dan IT.</p>
-                        </div>
-                    </Link>
-                    <Link :href="route('zona.index')" class="flex items-center p-4 bg-white rounded-lg shadow-md hover:bg-gray-50 transition">
-                        <MapPinIcon class="h-8 w-8 text-green-500 mr-4" />
-                        <div>
-                            <p class="font-semibold text-gray-800">Manajemen Zona</p>
-                            <p class="text-sm text-gray-500">Atur zona absensi berbasis lokasi.</p>
-                        </div>
-                    </Link>
-                    <Link :href="route('export.index')" class="flex items-center p-4 bg-white rounded-lg shadow-md hover:bg-gray-50 transition">
-                        <DocumentArrowDownIcon class="h-8 w-8 text-yellow-500 mr-4" />
-                        <div>
-                            <p class="font-semibold text-gray-800">Import & Export Data</p>
-                            <p class="text-sm text-gray-500">Kelola data massal via Excel.</p>
-                        </div>
-                    </Link>
+                        <!-- Bagian Statistik Sistem -->
+                        <section>
+                            <h3 class="flex items-center mb-4 text-xl font-semibold text-gray-700 dark:text-gray-300">
+                                <ServerIcon class="w-6 h-6 mr-3" />
+                                Statistik Sistem
+                            </h3>
+                            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                                <StatCard label="Total Pengguna" :value="stats.total_pengguna" color="text-blue-500" />
+                                <StatCard label="Siswa" :value="stats.total_siswa" color="text-green-500" />
+                                <StatCard label="Guru & BK" :value="stats.total_guru" color="text-yellow-500" />
+                                <StatCard label="Jurusan" :value="stats.total_jurusan" color="text-indigo-500" />
+                                <StatCard label="Kelas" :value="stats.total_kelas" color="text-sky-500" />
+                                <StatCard label="Jadwal Pelajaran" :value="stats.total_jadwal" color="text-rose-500" />
+                                <StatCard label="Zona Aktif" :value="stats.zona_aktif" color="text-purple-500" />
+                            </div>
+                        </section>
+
+                        <!-- Bagian Panel Manajemen -->
+                        <section>
+                            <h3 class="flex items-center mb-4 text-xl font-semibold text-gray-700 dark:text-gray-300">
+                                <Cog6ToothIcon class="w-6 h-6 mr-3" />
+                                Panel Manajemen
+                            </h3>
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <PanelLink
+                                    :href="route('admin.users.index')"
+                                    title="Manajemen Pengguna"
+                                    description="Kelola akun siswa, guru, dan staf."
+                                    color="text-blue-500"
+                                >
+                                    <template #icon><UserGroupIcon class="w-8 h-8" /></template>
+                                </PanelLink>
+
+                                <PanelLink
+                                    :href="route('admin.jurusan.index')"
+                                    title="Manajemen Jurusan"
+                                    description="Atur semua program keahlian."
+                                    color="text-indigo-500"
+                                >
+                                    <template #icon><AcademicCapIcon class="w-8 h-8" /></template>
+                                </PanelLink>
+
+                                <PanelLink
+                                    :href="route('admin.kelas.index')"
+                                    title="Manajemen Kelas"
+                                    description="Buat dan kelola semua ruang kelas."
+                                    color="text-sky-500"
+                                >
+                                    <template #icon><BuildingOffice2Icon class="w-8 h-8" /></template>
+                                </PanelLink>
+
+                                <PanelLink
+                                    :href="route('admin.jadwal.index')"
+                                    title="Manajemen Jadwal"
+                                    description="Susun jadwal pelajaran per kelas."
+                                    color="text-rose-500"
+                                    label="Penting"
+                                >
+                                    <template #icon><CalendarDaysIcon class="w-8 h-8" /></template>
+                                </PanelLink>
+
+                                <PanelLink
+                                    :href="route('admin.laporan.absensi.index')"
+                                    title="Laporan Absensi"
+                                    description="Lihat dan filter rekap kehadiran siswa."
+                                    color="text-orange-500"
+                                    label="Baru"
+                                >
+                                    <template #icon><DocumentChartBarIcon class="w-8 h-8" /></template>
+                                </PanelLink>
+
+                                <PanelLink
+                                    :href="route('admin.zona.index')"
+                                    title="Manajemen Zona"
+                                    description="Atur zona absensi berbasis lokasi."
+                                    color="text-green-500"
+                                >
+                                    <template #icon><MapPinIcon class="w-8 h-8" /></template>
+                                </PanelLink>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </AuthenticatedLayout>
 </template>
+

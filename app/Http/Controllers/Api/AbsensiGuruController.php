@@ -5,131 +5,106 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AbsensiGuru;
 use App\Models\Zona;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AbsensiGuruController extends Controller
 {
-    public function absenMasuk(Request $request)
+    /**
+     * Menyimpan data absensi (masuk atau pulang) untuk guru.
+     *
+     * Metode ini menerima data dari pemindai QR, melakukan serangkaian validasi
+     * (QR, lokasi), dan kemudian mencatat waktu absensi ke database.
+     */
+    public function store(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
+        // 1. Validasi input: pastikan semua data yang dibutuhkan ada dan valid.
+        $validated = $request->validate([
+            'qr_data' => 'required|string',
+            'tipe' => ['required', Rule::in(['masuk', 'pulang'])],
+            'location' => 'required|array',
+            'location.lat' => 'required|numeric|between:-90,90',
+            'location.lng' => 'required|numeric|between:-180,180',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
+        // 2. Validasi QR Code: Pastikan data QR valid.
+        // TODO: Implementasikan validasi QR yang lebih aman, misalnya dengan memeriksa
+        // token terenkripsi atau timestamp yang ada di dalam QR code.
+        if ($validated['qr_data'] !== 'SMK-ALIKHLASH-ABSENSI-GURU') {
+            return response()->json(['message' => 'QR Code tidak valid atau sudah kedaluwarsa.'], 422);
         }
 
-        $zona = Zona::where('is_active', true)->first();
-        if (!$zona) {
-            return response()->json([
-                'message' => 'Zona absensi belum diatur'
-            ], 400);
+        // 3. Validasi Zona & Jarak
+        $zonaAktif = Zona::where('is_active', true)->first();
+        if (!$zonaAktif) {
+            return response()->json(['message' => 'Saat ini tidak ada zona absensi yang aktif.'], 400);
         }
 
         $distance = $this->calculateDistance(
-            $request->latitude,
-            $request->longitude,
-            $zona->lat,
-            $zona->lng
+            $zonaAktif->lat, $zonaAktif->lng,
+            $validated['location']['lat'], $validated['location']['lng']
         );
 
-        if ($distance > $zona->radius) {
-            return response()->json([
-                'message' => 'Anda berada di luar radius absensi',
-                'distance' => round($distance, 2),
-                'radius' => $zona->radius
-            ], 403);
+        if ($distance > $zonaAktif->radius) {
+            return response()->json(['message' => 'Anda berada di luar zona absensi yang diizinkan.'], 403);
         }
 
-        $absensiHariIni = AbsensiGuru::where('guru_id', Auth::id())
-            ->whereDate('tanggal', now()->format('Y-m-d'))
-            ->first();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $today = now()->toDateString();
 
-        if ($absensiHariIni && $absensiHariIni->jam_masuk) {
-            return response()->json([
-                'message' => 'Anda sudah melakukan absensi masuk hari ini'
-            ], 400);
+        // 4. Ambil atau buat data absensi baru untuk guru pada hari ini.
+        $absensi = AbsensiGuru::firstOrNew([
+            'user_id' => $user->id,
+            'tanggal' => $today,
+        ]);
+
+        // 5. Proses berdasarkan tipe absensi (masuk atau pulang).
+        if ($validated['tipe'] === 'masuk') {
+            if ($absensi->waktu_masuk) {
+                return response()->json(['message' => 'Anda sudah melakukan absensi masuk hari ini.'], 409); // 409 Conflict
+            }
+            $absensi->waktu_masuk = now();
+            $absensi->lokasi_masuk = json_encode($validated['location']);
+        } else { // tipe 'pulang'
+            if (!$absensi->waktu_masuk) {
+                return response()->json(['message' => 'Anda harus melakukan absensi masuk terlebih dahulu.'], 400);
+            }
+            if ($absensi->waktu_pulang) {
+                return response()->json(['message' => 'Anda sudah melakukan absensi pulang hari ini.'], 409);
+            }
+            $absensi->waktu_pulang = now();
+            $absensi->lokasi_pulang = json_encode($validated['location']);
         }
 
-        $absensi = AbsensiGuru::updateOrCreate(
-            [
-                'guru_id' => Auth::id(),
-                'tanggal' => now()->format('Y-m-d'),
-            ],
-            [
-                'jam_masuk' => now(),
-                'lat_masuk' => $request->latitude,
-                'lng_masuk' => $request->longitude,
-            ]
-        );
+        $absensi->status = 'hadir';
+        $absensi->save();
 
         return response()->json([
-            'message' => 'Absensi masuk berhasil',
+            'message' => "Absensi {$validated['tipe']} berhasil direkam.",
             'data' => $absensi
-        ], 201);
-    }
-
-    public function absenPulang(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
-        }
-
-        $zona = Zona::where('is_active', true)->first();
-        if (!$zona) {
-            return response()->json(['message' => 'Zona absensi belum diatur'], 400);
-        }
-
-        $distance = $this->calculateDistance($request->latitude, $request->longitude, $zona->lat, $zona->lng);
-
-        if ($distance > $zona->radius) {
-            return response()->json(['message' => 'Anda berada di luar radius absensi'], 403);
-        }
-
-        $absensiHariIni = AbsensiGuru::where('guru_id', Auth::id())
-            ->whereDate('tanggal', now()->format('Y-m-d'))
-            ->first();
-
-        if (!$absensiHariIni || !$absensiHariIni->jam_masuk) {
-            return response()->json(['message' => 'Anda belum melakukan absensi masuk hari ini'], 400);
-        }
-
-        if ($absensiHariIni->jam_keluar) {
-            return response()->json(['message' => 'Anda sudah melakukan absensi pulang hari ini'], 400);
-        }
-
-        $absensiHariIni->update([
-            'jam_keluar' => now(),
-            'lat_pulang' => $request->latitude,
-            'lng_pulang' => $request->longitude,
-        ]);
-
-        return response()->json([
-            'message' => 'Absensi pulang berhasil',
-            'data' => $absensiHariIni
         ]);
     }
 
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    /**
+     * Menghitung jarak antara dua titik geografis menggunakan formula Haversine.
+     *
+     * @return float Jarak dalam meter.
+     */
+    private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
-        $earthRadius = 6371; // Radius bumi dalam km
+        $earthRadius = 6371000; // Radius bumi dalam meter
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
-        $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) * sin($dLon / 2);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        $distance = $earthRadius * $c;
-        return $distance * 1000; // Mengembalikan jarak dalam meter
+
+        return $earthRadius * $c;
     }
 }
 

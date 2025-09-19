@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -26,36 +27,29 @@ class AuthenticatedSessionController extends Controller
     /**
      * Proses login user.
      */
-    public function store(LoginRequest $request)
+    public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
+
         $request->session()->regenerate();
 
-        // 🔑 Kalau request dari SPA (axios/fetch), balikin JSON
-        if ($request->expectsJson() || $request->wantsJson()) {
-            return response()->json([
-                'message' => 'Login berhasil',
-                'user'    => $request->user(),
-            ]);
-        }
-
-        // 🔑 Kalau request biasa (form), redirect ke dashboard
-        return redirect()->intended(route('dashboard', absolute: false));
+        // --- PERUBAHAN DI SINI ---
+        // Kita menggunakan redirect()->route() secara langsung.
+        // Ini lebih tegas dan menghindari potensi konflik dengan helper intended().
+        // Setelah login, pengguna akan SELALU diarahkan ke rute 'dashboard'.
+        return redirect()->route('dashboard');
     }
 
     /**
      * Logout user.
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
-        // 🔑 Balikin JSON kalau logout dari SPA
-        if ($request->expectsJson() || $request->wantsJson()) {
-            return response()->json(['message' => 'Logout berhasil']);
-        }
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
 
         return redirect('/');
     }

@@ -2,95 +2,103 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller; // Pastikan ini di-import
+use App\Http\Controllers\Controller;
 use App\Models\AbsensiSiswa;
 use App\Models\Zona;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AbsensiSiswaController extends Controller
 {
-    public function absenSiswa(Request $request)
+    /**
+     * Menyimpan data absensi baru dari siswa.
+     */
+    public function store(Request $request)
     {
-        // 1. VALIDASI DIPERBAIKI: Menggunakan 'lat' dan 'lng'
-        $validator = Validator::make($request->all(), [
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'lat'  => 'required|numeric|between:-90,90',
-            'lng'  => 'required|numeric|between:-180,180',
+        $request->validate([
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+            'foto' => 'required|string', // Menerima base64 string
+            'keterangan' => 'required|in:hadir,izin,sakit,alpha',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
+        $user = Auth::user();
+        $today = now()->toDateString();
+
+        // Cek apakah siswa sudah absen hari ini
+        $existingAbsensi = AbsensiSiswa::where('siswa_id', $user->id)
+            ->whereDate('waktu', $today)
+            ->first();
+
+        if ($existingAbsensi) {
+            return response()->json(['message' => 'Anda sudah melakukan absensi hari ini.'], 409); // 409 Conflict
         }
 
-        // 2. Cek apakah sudah absen hari ini
-        $sudahAbsen = AbsensiSiswa::where('siswa_id', Auth::id())
-            ->whereDate('waktu', now())
-            ->exists();
-
-        if ($sudahAbsen) {
-            return response()->json(['message' => 'Anda sudah melakukan absensi hari ini.'], 400);
-        }
-
-        $zona = Zona::where('is_active', true)->first();
-        if (!$zona) {
-            return response()->json(['message' => 'Zona absensi belum diatur'], 400);
+        // Cek validasi zona
+        $zonaAktif = Zona::where('is_active', true)->first();
+        if (!$zonaAktif) {
+             return response()->json(['message' => 'Tidak ada zona absensi yang aktif.'], 400);
         }
 
         $distance = $this->calculateDistance(
-            $request->lat, // Menggunakan lat
-            $request->lng, // Menggunakan lng
-            $zona->lat,
-            $zona->lng
+            $zonaAktif->lat, $zonaAktif->lng,
+            $request->lat, $request->lng
         );
 
-        $dalamZona = $distance <= $zona->radius;
-
-        if (!$dalamZona) {
-            return response()->json([
-                'message' => 'Anda berada di luar radius absensi',
-                'distance' => round($distance, 2),
-                'radius' => $zona->radius
-            ], 403);
+        if ($distance > $zonaAktif->radius) {
+            return response()->json(['message' => 'Anda berada di luar zona absensi yang diizinkan.'], 403); // 403 Forbidden
         }
 
-        $fotoPath = $request->file('foto')->store('absensi/siswa', 'public');
+        // Proses dan simpan foto
+        $fotoData = $request->foto;
+        $fotoName = 'absensi/' . $user->id . '_' . time() . '.png';
+        
+        // Menghapus header data URL (misal: "data:image/png;base64,")
+        if (preg_match('/^data:image\/(\w+);base64,/', $fotoData, $type)) {
+            $fotoData = substr($fotoData, strpos($fotoData, ',') + 1);
+            $type = strtolower($type[1]); // jpg, png, gif
 
-        // 3. PEMBUATAN DATA DIPERBAIKI: Kolom disesuaikan dengan migrasi
+            if (!in_array($type, [ 'jpg', 'jpeg', 'gif', 'png' ])) {
+                throw new \Exception('invalid image type');
+            }
+            $fotoData = base64_decode($fotoData);
+
+            if ($fotoData === false) {
+                 throw new \Exception('base64_decode failed');
+            }
+        } else {
+             throw new \Exception('did not match data URI with image data');
+        }
+
+        Storage::disk('public')->put($fotoName, $fotoData);
+
+        // Simpan data absensi
         $absensi = AbsensiSiswa::create([
-            'siswa_id'    => Auth::id(),
-            'waktu'       => now(),
-            'foto_path'   => $fotoPath,
-            'lat'         => $request->lat,
-            'lng'         => $request->lng,
-            'valid_zona'  => $dalamZona,
-            'device_info' => ['user_agent' => $request->userAgent()],
-            'keterangan'  => 'Hadir via API',
+            'siswa_id' => $user->id,
+            'waktu' => now(),
+            'lat' => $request->lat,
+            'lng' => $request->lng,
+            'foto_path' => $fotoName,
+            'keterangan' => $request->keterangan,
         ]);
 
         return response()->json([
-            'message' => 'Absensi berhasil',
+            'message' => 'Absensi berhasil disimpan.',
             'data' => $absensi
-        ], 201); // Gunakan status 201 Created
+        ], 201);
     }
-
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-    {
-        $earthRadius = 6371000; // dalam meter
-
+    
+    /**
+     * Menghitung jarak antara dua titik geografis (Haversine formula).
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2) {
+        $earthRadius = 6371000; // meter
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
-
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLon / 2) * sin($dLon / 2);
-
+        $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) * sin($dLon / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c; // Hasil sudah dalam meter
+        return $earthRadius * $c;
     }
 }

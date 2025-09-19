@@ -2,106 +2,133 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// Controllers
 use App\Http\Controllers\Api\Auth\ApiLoginController;
-use App\Http\Controllers\Api\AbsensiSiswaController;
 use App\Http\Controllers\Api\AbsensiGuruController;
+use App\Http\Controllers\Api\AbsensiSiswaController;
 use App\Http\Controllers\Api\CatatanPelanggaranController;
-use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\ZonaController;
-use App\Http\Controllers\Api\KelasController;
-use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\ExportController;
+use App\Http\Controllers\Api\JadwalController;
+use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\LiveAbsensiController;
-use Spatie\Permission\Middleware\RoleMiddleware;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\UserManagementController;
+use App\Http\Controllers\Api\ZonaController;
+use App\Http\Controllers\ProfileController; // <-- ProfileController
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-| Ini adalah file routing final yang sudah stabil dan bersih.
-| Rute-rute dikelompokkan berdasarkan fungsionalitas dan middleware.
 */
 
-// --- AUTHENTICATION (Rute Publik) ---
-Route::post('/login', [ApiLoginController::class, 'store']);
+// 🔹 Login (Public)
+Route::post('/login', [ApiLoginController::class, 'store'])->name('api.login');
 
-// --- GRUP RUTE YANG MEMERLUKAN OTENTIKASI ---
+// 🔹 Protected Routes (Require Auth)
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::post('/logout', [ApiLoginController::class, 'destroy']);
+    // Auth Info & Logout
+    Route::post('/logout', [ApiLoginController::class, 'logout'])->name('api.logout');
+    Route::get('/user', fn (Request $request) => response()->json([
+        'id'    => $request->user()->id,
+        'name'  => $request->user()->name,
+        'email' => $request->user()->email,
+        'roles' => $request->user()->getRoleNames(),
+    ]))->name('api.user');
 
-    // --- USER INFO ---
-    Route::get('/user', function (Request $request) {
-        return response()->json([
-            'id'    => $request->user()->id,
-            'name'  => $request->user()->name,
-            'email' => $request->user()->email,
-            'roles' => $request->user()->getRoleNames(),
-        ]);
+    // 🔹 PROFILE API (GET, POST, PATCH, DELETE)
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'edit'])->name('api.profile.edit'); // GET profil
+        Route::match(['post', 'patch'], '/', [ProfileController::class, 'update'])->name('api.profile.update'); // POST/PATCH update
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('api.profile.destroy'); // DELETE akun
     });
 
-    // --- DASHBOARD ---
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware(RoleMiddleware::class . ':siswa|guru|bk|it')
-        ->name('api.dashboard'); // Diberi nama untuk Ziggy
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.dashboard');
 
-    // --- ABSENSI ---
-    Route::prefix('absen')->group(function () {
-        Route::post('/siswa', [AbsensiSiswaController::class, 'absenSiswa'])
-            ->middleware(RoleMiddleware::class . ':siswa');
-        Route::post('/guru/masuk', [AbsensiGuruController::class, 'absenMasuk'])
-            ->middleware(RoleMiddleware::class . ':guru');
-        Route::post('/guru/pulang', [AbsensiGuruController::class, 'absenPulang'])
-            ->middleware(RoleMiddleware::class . ':guru');
+    // 🔹 Absensi Guru
+    Route::prefix('absen-guru')->name('api.absen.guru.')->middleware('role:guru')->group(function () {
+        Route::post('/store', [AbsensiGuruController::class, 'store'])->name('store');
     });
 
-    // --- LIVE ABSENSI (REAL-TIME) ---
-    Route::prefix('live')->group(function () {
+    // 🔹 Absensi Siswa
+    Route::post('/absen-siswa', [AbsensiSiswaController::class, 'store'])
+        ->middleware('role:siswa')
+        ->name('api.absen.siswa');
+
+    // 🔹 Live Tracking
+    Route::prefix('live')->name('api.live.')->group(function () {
         Route::post('/sesi/mulai', [LiveAbsensiController::class, 'mulaiSesi'])
-            ->middleware(RoleMiddleware::class . ':guru|it|bk');
+            ->middleware('role:guru|bk|it')
+            ->name('sesi.mulai');
+
         Route::post('/lokasi/update', [LiveAbsensiController::class, 'updateLokasi'])
-            ->middleware(RoleMiddleware::class . ':siswa');
+            ->middleware('role:siswa')
+            ->name('lokasi.update');
     });
 
-    // --- FITUR UMUM (GURU, BK, IT) ---
+    // 🔹 Catatan Pelanggaran (Guru & BK)
     Route::apiResource('catatan-pelanggaran', CatatanPelanggaranController::class)
-         ->middleware(RoleMiddleware::class . ':guru|bk');
+        ->names('api.catatan')
+        ->middleware('role:guru|bk');
 
+    // 🔹 Jadwal
     Route::get('/jadwal', [JadwalController::class, 'index'])
-         ->middleware(RoleMiddleware::class . ':guru|it');
+        ->middleware('role:guru|it')
+        ->name('api.jadwal.index');
 
-    Route::prefix('export')->middleware(RoleMiddleware::class . ':it|guru|bk')->group(function () {
-        Route::get('/absensi/siswa', [ExportController::class, 'exportAbsensiSiswa']);
-        Route::get('/absensi/siswa/pdf', [ExportController::class, 'exportAbsensiSiswaPdf']);
-        Route::get('/pelanggaran', [ExportController::class, 'exportPelanggaran']);
-        Route::get('/jadwal', [ExportController::class, 'exportJadwal']);
+    // 🔹 Export Data
+    Route::prefix('export')->name('api.export.')->middleware('role:guru|bk|it')->group(function () {
+        Route::get('/absensi/siswa', [ExportController::class, 'exportAbsensiSiswa'])->name('absensi.siswa');
+        Route::get('/absensi/siswa/pdf', [ExportController::class, 'exportAbsensiSiswaPdf'])->name('absensi.siswa.pdf');
+        Route::get('/pelanggaran', [ExportController::class, 'exportPelanggaran'])->name('pelanggaran');
+        Route::get('/jadwal', [ExportController::class, 'exportJadwal'])->name('jadwal');
     });
 
-    // --- FITUR MANAJEMEN (HANYA IT) ---
-    Route::middleware(RoleMiddleware::class . ':it')->group(function () {
-        Route::apiResource('zona', ZonaController::class);
-        Route::apiResource('kelas', KelasController::class);
-        Route::apiResource('users', UserManagementController::class)->except(['store']);
-        Route::apiResource('jadwal', JadwalController::class)->except(['index']);
-
-        Route::post('/kelas/{kelas}/siswa', [KelasController::class, 'addSiswa']);
-        Route::delete('/kelas/{kelas}/siswa/{user}', [KelasController::class, 'removeSiswa']);
-
-        Route::put('/users/{user}/role', [UserManagementController::class, 'updateRole']);
-        Route::put('/users/{user}/kelas', [UserManagementController::class, 'updateKelas']);
-        Route::post('/users/{user}/foto', [UserManagementController::class, 'uploadProfilePicture']);
-
-        Route::post('/users/import', [UserManagementController::class, 'importUsers']);
-        Route::get('/users/export', [UserManagementController::class, 'exportUsers']);
+    // 🔹 Notifikasi
+    Route::prefix('notifications')->name('api.notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/unread', [NotificationController::class, 'unread'])->name('unread');
+        Route::post('/{notification}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('read');
+        Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('readAll');
     });
 
-    // --- NOTIFIKASI ---
-    Route::prefix('notifications')->group(function () {
-        Route::get('/', [NotificationController::class, 'index']);
-        Route::get('/unread', [NotificationController::class, 'unread']);
-        Route::post('/{notification}/mark-as-read', [NotificationController::class, 'markAsRead']);
-        Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+    // 🔹 Manajemen Khusus IT
+    Route::middleware('role:it')->group(function () {
+        // Resources
+        Route::apiResources([
+            'zona'  => ZonaController::class,
+            'kelas' => KelasController::class,
+            'users' => UserManagementController::class,
+            'jadwal'=> JadwalController::class,
+        ], [
+            'names' => [
+                'zona'  => 'api.zona',
+                'kelas' => 'api.kelas',
+                'users' => 'api.users',
+                'jadwal'=> 'api.jadwal',
+            ],
+        ]);
+
+        // Users tambahan (tanpa store)
+        Route::apiResource('users', UserManagementController::class)
+            ->except(['store'])
+            ->names('api.users');
+
+        // Relasi Kelas - Siswa
+        Route::post('/kelas/{kelas}/siswa', [KelasController::class, 'addSiswa'])->name('api.kelas.siswa.add');
+        Route::delete('/kelas/{kelas}/siswa/{user}', [KelasController::class, 'removeSiswa'])->name('api.kelas.siswa.remove');
+
+        // User Management Extra
+        Route::prefix('users')->name('api.users.')->group(function () {
+            Route::put('/{user}/role', [UserManagementController::class, 'updateRole'])->name('updateRole');
+            Route::put('/{user}/kelas', [UserManagementController::class, 'updateKelas'])->name('updateKelas');
+            Route::post('/{user}/foto', [UserManagementController::class, 'uploadProfilePicture'])->name('uploadFoto');
+            Route::post('/import', [UserManagementController::class, 'importUsers'])->name('import');
+            Route::get('/export', [UserManagementController::class, 'exportUsers'])->name('export');
+        });
     });
 });

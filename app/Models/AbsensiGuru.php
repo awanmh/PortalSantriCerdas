@@ -8,16 +8,17 @@ class AbsensiGuru extends Model
 {
     protected $table = 'absensi_guru';
 
-    // Pastikan semua kolom yang tidak boleh null ada di fillable
     protected $fillable = [
-        'guru_id',
+        'guru_id',       // ini harus digunakan, bukan user_id
         'tanggal',
         'jam_masuk',
         'jam_keluar',
         'status',
         'keterangan',
-        'latitude',
-        'longitude'
+        'lat_masuk',
+        'lng_masuk',
+        'lat_pulang',
+        'lng_pulang',
     ];
 
     protected $casts = [

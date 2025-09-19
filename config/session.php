@@ -156,7 +156,10 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN', '127.0.0.1'),
+    // --- PERUBAHAN KRUSIAL DI SINI ---
+    // Mengubah '127.0.0.1' menjadi null agar browser menangani domain secara otomatis.
+    // Ini adalah pengaturan default Laravel dan yang paling aman.
+    'domain' => env('SESSION_DOMAIN', null),
 
     /*
     |--------------------------------------------------------------------------

@@ -6,22 +6,41 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        Schema::create('siswa', function (Blueprint $table) { // Perhatikan: 'siswa' tanpa "s"
+        Schema::create('siswa', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('nis')->unique();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+
+            // --- PERUBAHAN PENTING ADA DI SINI ---
+
             $table->string('nama');
-            $table->enum('kelas', ['X', 'XI', 'XII']);
-            $table->enum('jurusan', ['RPL', 'TKJ', 'TKRO', 'TBSM']);
+            // NIS bisa jadi null saat pendaftaran awal, diisi oleh admin nanti
+            $table->string('nis')->unique()->nullable();
+            
+            // Menggunakan foreign key ke tabel 'jurusan', bukan enum
+            $table->foreignId('jurusan_id')->constrained('jurusan');
+
+            // Menambahkan kolom angkatan sesuai kebutuhan form registrasi
+            $table->string('angkatan');
+
+            // Sebaiknya kelas juga menggunakan foreign key, dibuat nullable
+            // karena siswa mungkin belum masuk kelas saat mendaftar.
+            $table->foreignId('kelas_id')->nullable()->constrained('kelas');
+
             $table->string('no_hp_ortu')->nullable();
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        Schema::dropIfExists('siswa'); // Tanpa "s"
+        Schema::dropIfExists('siswa');
     }
 };

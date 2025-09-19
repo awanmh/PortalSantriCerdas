@@ -3,8 +3,12 @@
 │   ├── Flowchart.png
 │   └──logo.jpg
 ├── app/
+│   ├── Console/
+│   │   └── Commands/
+│   │       └── CheckStudentLocations.php
 │   ├── Events/
-│   │   └── AbsensiTerlambatEvent.php
+│   │   ├── AbsensiTerlambatEvent.php
+│   │   └── LokasiSiswaDiperbarui.php
 │   ├── Export/
 │   │   ├── AbsensiSiswaExport.php
 │   │   ├── CatatanPelanggaranExport.php
@@ -14,14 +18,19 @@
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Api/
+│   │   │   │   ├── Auth/
+│   │   │   │       └── ApiLoginController.php
 │   │   │   │   ├── AbsensiGuruController.php
 │   │   │   │   ├── AbsensisiswaControllerphp
-│   │   │   │   ├── ApiLoginControllerphp
+│   │   │   │   ├── ApiLoginController.php
 │   │   │   │   ├── CatatanPelanggaranController.php
 │   │   │   │   ├── DashboardController.php
 │   │   │   │   ├── ExportController.php
 │   │   │   │   ├── JadwalController.php
 │   │   │   │   ├── KelasController.php
+│   │   │   │   ├── LiveAbsensiController.php
+│   │   │   │   ├── LiveTrackingController.php
+│   │   │   │   ├── LoginController.php
 │   │   │   │   ├── NotificationsController.php
 │   │   │   │   ├── UserManagementController.php
 │   │   │   │   └── ZonaController.php
@@ -36,6 +45,15 @@
 │   │   │   │   ├── ProfileController.php
 │   │   │   │   ├── RegisteredUserController.php
 │   │   │   │   └── VerifyEmailController.php
+│   │   │   ├── Web/
+│   │   │   │   ├── AbsensiController.php
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── JadwalController.php
+│   │   │   │   ├── JurusanController.php
+│   │   │   │   ├── KelasController.php
+│   │   │   │   ├── LiveMapController.php
+│   │   │   │   ├── UserController.php
+│   │   │   │   └── ZonaController.php
 │   │   │   ├── AbsensiGuruController.php
 │   │   │   ├── AbsensisiswaController.php
 │   │   │   ├── CatatanPelanggaranController.php
@@ -43,6 +61,7 @@
 │   │   │   └── JadwalController.php
 │   │   ├── Middleware/
 │   │   │   ├── EnsureEmailsVerified.php
+│   │   │   ├── EnsureProfilePhotoIsUploaded.php
 │   │   │   ├── ForceStagingDomain.php
 │   │   │   ├── HandleInertiaRequests.php
 │   │   │   └── VerifyCsrfToken.php
@@ -52,6 +71,9 @@
 │   │   │   ├── AbsensiGuruRequest.php
 │   │   │   ├── AbsensiSiswaRequest.php
 │   │   │   ├── CatatanPelanggaranRequest.php
+│   │   │   ├── JadwalRequest.php
+│   │   │   ├── JurusanRequest.php
+│   │   │   ├── KelasRequest.php
 │   │   │   ├── ProfileUpdateRequest.php
 │   │   │   ├── UsersImportRequest.php
 │   │   │   ├── Controller.php
@@ -131,7 +153,10 @@
 │   │   ├── 2025_08_26_174819_create_telescope_entries_table.php
 │   │   ├── 2025_08_27_092603_create_siswa_table.php
 │   │   ├── 2025_08_29_114542_add_columns_to_zone_table.php
-│   │   └── 2025_09_01_044325_create_notifications_table.php
+│   │   ├── 2025_09_01_044325_create_notifications_table.php
+│   │   ├── 2025_09_12_162459_add_hours_to_zone_table.php
+│   │   ├── 2025_09_12_174934_add_role_to_users_table.php
+│   │   └── 2025_09_17_212620_add_profile_photo_path_to_users_table.php
 │   ├── seeders/
 │   │   ├── AbsensiSeeder.php
 │   │   ├── DatabaseSeeder.php
@@ -153,6 +178,8 @@
 │   ├── js/
 │   │   ├── components/
 │   │   │   │   ├── ApplicationLogo.vue
+│   │   │   │   ├── AuthenticatedCardLogo.vue
+│   │   │   │   ├── AuthenticatedCard.vue
 │   │   │   │   ├── Checkbox.vue
 │   │   │   │   ├── DangerButton.vue
 │   │   │   │   ├── Dropdown.vue
@@ -161,18 +188,55 @@
 │   │   │   │   ├── InputLabel.vue
 │   │   │   │   ├── Modal.vue
 │   │   │   │   ├── NavLink.vue
+│   │   │   │   ├── Pagination.vue
+│   │   │   │   ├── PanelLink.vue
 │   │   │   │   ├── PrimaryButton.vue
+│   │   │   │   ├── QrScannerModal.vue
 │   │   │   │   ├── ResponsiveNavLink.vue
 │   │   │   │   ├── SecondaruButton.vue
+│   │   │   │   ├── statCard.vue
 │   │   │   │   └── TextInput.vue
+│   │   ├── Composables/
+│   │   │   │   ├── CatatanPelanggaran.vue
+│   │   │   │   ├── useAuth.vue
+│   │   │   │   ├── useDashboard.vue
+│   │   │   │   └── useLiveGPS.vue
 │   │   ├── Layouts/
 │   │   │   │   ├── AuthenticatedLayout.vue
 │   │   │   │   └── GuestLayout.vue
 │   │   ├── Pages/
+│   │   │   │   ├── Absensi/
+│   │   │   │   │   │   └── Create.vue
+│   │   │   │   ├── Admin/
+│   │   │   │   │   │   ├── Absensi/
+│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   ├── Jurusan/
+│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   ├── Jadwal/
+│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   ├── Kelas/
+│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   ├── Laporan/
+│   │   │   │   │   │   │   └── Absensi.vue
+│   │   │   │   │   │   ├── Users/
+│   │   │   │   │   │   │   ├── Create.vue
+│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   ├── Zona/
+│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   └── LivemMap.vue
 │   │   │   │   ├── Auth/
+│   │   │   │   │   │   ├── ConfirmPassword.vue
+│   │   │   │   │   │   ├── ForgotPassword.vue
+│   │   │   │   │   │   ├── Login.vue
+│   │   │   │   │   │   ├── Register.vue
+│   │   │   │   │   │   ├── ResetPassword.vue
+│   │   │   │   │   │   └── VerifyEmail.vue
+│   │   │   │   ├── CatatanPelanggaran/
+│   │   │   │   │   │   └── Index.vue
 │   │   │   │   ├── Dashboard/
 │   │   │   │   │   │   ├── BK.vue
 │   │   │   │   │   │   ├── Guru.vue
+│   │   │   │   │   │   ├── GuruMap.vue
 │   │   │   │   │   │   ├── IT.vue
 │   │   │   │   │   │   └── Siswa.vue
 │   │   │   │   ├── Profile/
@@ -181,10 +245,18 @@
 │   │   │   │   │   │   ├── UpdatePasswordForm.vue
 │   │   │   │   │   │   └── UpdateProfileInformationForm.vue
 │   │   │   │   │   └── Edit.vue
+│   │   │   │   ├── Users/
+│   │   │   │   │   │   ├── Create.vue
+│   │   │   │   │   │   ├── Edit.vue
+│   │   │   │   │   │   └── Index.vue
+│   │   │   │   ├── Zona/
+│   │   │   │   │   │   └── Index.vue
 │   │   │   │   ├── Dashboard.vue
 │   │   │   │   └── Welcome.vue
 │   │   ├── app.js
 │   │   ├── bootstrap.js
+│   │   ├── requests.js
+│   │   ├── ziggy.js
 │   │   └── echo.js
 │   └── views/
 │       └── app.blade.php

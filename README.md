@@ -1,193 +1,106 @@
-# 📑 Laporan Progres & Catatan Backend & Frontend
+# Dokumentasi Bug: Unggah Foto Profil Gagal Secara Diam-diam
 
-⚠️ **Instruksi untuk pengerjaan Selanjutnya**  
-- Fokus utama: **selesaikan error 401 Unauthorized** pada request `GET /api/dashboard`.  
-- Backend **sudah stabil (99%)**, frontend **baru 50%** dan terblokir oleh isu otentikasi.  
-- Solusi yang diduga: Tambahkan middleware pembaca sesi ke grup `api` di `Kernel.php`, lalu bersihkan cache Laravel.  
-- Gunakan laporan progres di bawah untuk memahami status proyek sebelum melanjutkan.  
+**Tanggal Laporan:** 19 September 2025  
+**Status:** Belum Terpecahkan (Memerlukan Investigasi Lebih Lanjut)  
+**Prioritas:** Kritis (Menghalangi alur wajib untuk pengguna siswa)  
 
 ---
 
-**Proyek:** Sistem Monitoring Absensi SMK  
-**Tanggal:** 5 September 2025  
-**Status Saat Ini:** Backend Stabil ✅, Frontend Terblokir oleh Isu Otentikasi 🚨  
+## 1. Ringkasan Masalah
+Fitur unggah foto profil di halaman `/profile` gagal menyimpan file foto ke server. Saat pengguna (terutama siswa) memilih foto baru dan menekan tombol "Simpan", halaman hanya me-reload kembali ke halaman profil tanpa menyimpan perubahan dan tanpa menampilkan pesan error yang jelas.
 
 ---
 
-## 1. 🎯 Ringkasan Proyek
-Sistem monitoring absensi berbasis **lokasi (GPS)** untuk siswa dan guru.  
-- **Backend:** Laravel  
-- **Frontend:** Vue.js + Inertia.js  
+## 2. Gejala yang Teramati
+
+**Perilaku Pengguna:**
+- Pengguna memilih file, menekan "Simpan", halaman me-reload kembali ke `/profile`.
+
+**Hasil:**
+- Foto tidak tersimpan di folder `storage/app/public/profile-photos/`.
+- Data lain (seperti nama atau email) juga tidak diperbarui.
+- Tidak ada notifikasi "Profil berhasil diperbarui" yang muncul.
+
+**Log Frontend (Console Browser):**
+- Semua `console.log` di dalam `UpdateProfileInformationForm.vue` menunjukkan bahwa fungsi submit berjalan dengan benar.
+- Permintaan Inertia.js dimulai (`🚀 [INERTIA START]`).
+- Permintaan langsung menerima respons sukses (`✅ [INERTIA SUCCESS]`).
+- Permintaan selesai (`🏁 [INERTIA FINISH]`).
+
+**Log Backend (`laravel.log` & `php artisan serve`):**
+- Tidak ada log sama sekali yang muncul dari dalam `ProfileController@update`.
+- Ini menunjukkan eksekusi tidak pernah mencapai logika di dalam controller.
 
 ---
 
-## 2. 📊 Tabel Progres
+## 3. Investigasi & Langkah yang Telah Dicoba
+Berikut daftar hal yang telah diperiksa dan dapat dikesampingkan sebagai penyebab utama:
 
-| Komponen   | Status     | Persentase | Keterangan                                                                 |
-|------------|-----------|-------------|-----------------------------------------------------------------------------|
-| Backend    | ✅ Stabil | 99%         | Migrasi, seeder, API, dan logika bisnis sudah berjalan & teruji.            |
-| Frontend   | 🚧 Parsial | 50%         | Struktur dan halaman dasar sudah ada, tapi terblokir error 401.             |
-| Database   | ✅ Siap   | 100%        | 22 migrasi sukses, 8 seeder berhasil dengan data dummy fungsional.          |
-| API        | ✅ Siap   | 100%        | Endpoint login, absensi, zona, pelanggaran, export Excel sudah teruji.      |
-| Live GPS   | ⚡ Fondasi | 80%         | Laravel Reverb (WebSocket) sudah diimplementasi di backend.                 |
-| Integrasi  | ❌ Gagal  | 0%          | Terblokir error 401 pada komunikasi frontend-backend.                       |
+1. **Konflik Metode POST vs PATCH**
+   - **Status:** Sudah diperbaiki.
+   - Rute `profile.update` di `routes/web.php` diubah menjadi `Route::post(...)`.
+   - Komponen `UpdateProfileInformationForm.vue` sudah diperbarui untuk mengirim permintaan POST murni tanpa method spoofing (`_method: 'patch'`).
 
----
+2. **Validasi Backend**
+   - **Status:** Sudah benar.
+   - `ProfileUpdateRequest.php` diperbarui dengan aturan validasi yang benar untuk `photo`, termasuk `requiredIf` untuk siswa.
 
-## 3. ✅ Detail Progres Backend
-- **Database:** 22 migrasi sukses, tabel lengkap (users, absensi, zona, kelas, dll.)  
-- **Seeder:** 8 seeder berhasil, data dummy sesuai semua peran (IT, Guru, BK, Siswa).  
-- **API Utama Teruji via Postman:**
-  - `POST /api/login` → Autentikasi & token.  
-  - `POST /api/absen/siswa` → Absensi dengan validasi lokasi.  
-  - `POST /api/absen/guru/masuk` & `/pulang` → Absensi guru.  
-  - `POST /api/zona` → Tambah zona baru.  
-  - `POST /api/catatan-pelanggaran` → Simpan catatan.  
-  - `GET /api/export/absensi/siswa` → Ekspor Excel.  
-- **Live GPS:** Fondasi WebSocket sudah siap.  
+3. **Logika Controller**
+   - **Status:** Sudah benar.
+   - `ProfileController.php` berisi logika yang memeriksa `$request->hasFile('photo')`, menyimpan file, memperbarui model, dan mengarahkan kembali.
 
----
+4. **Struktur Model**
+   - **Status:** Sudah benar.
+   - `User.php` memiliki `profile_photo_path` di dalam `$fillable`.
 
-## 4. 🏗️ Detail Progres Frontend
-- **Struktur Proyek:** `resources/js` sudah rapi (Components, Layouts, Pages).  
-- **Halaman Utama:**
-  - `Login.vue` → Login berfungsi.  
-  - `AuthenticatedLayout.vue` → Template utama pasca login.  
-  - `Dashboard.vue` → Dashboard induk berdasarkan peran.  
-  - `Dashboard/*` → Placeholder dashboard untuk Siswa, Guru, BK, IT.  
-- **Integrasi Awal:** Login sukses, redirect ke `/dashboard`.  
+5. **Masalah Cache**
+   - **Status:** Telah dicoba dibersihkan berkali-kali:
+     - `php artisan optimize:clear`
+     - `php artisan config:clear`
+     - `php artisan route:cache`
+     - `php artisan permission:cache-reset`
+     - Penghapusan manual folder `bootstrap/cache`
+   - Tidak menyelesaikan masalah inti.
+
+6. **Masalah Komponen Frontend**
+   - **Status:** Sudah diperbaiki.
+   - `PrimaryButton.vue` sudah memiliki `type="submit"` secara default.
 
 ---
 
-## 5. 🚨 Blocker Kritis: Error 401 Unauthorized
-- **Kondisi:** Setelah login, request `GET /api/dashboard` gagal dengan **401 Unauthorized**.  
-- **Hasil Debugging:**  
-  - Cookie sesi (`sistem-monitoring-smk-session`) terkirim dengan benar.  
-  - `.env`, `cors.php`, `sanctum.php` → sudah benar.  
-  - **Akar Masalah:** Middleware `api` tidak bisa membaca sesi → `auth:sanctum` gagal mengenali user.  
+## 4. Hipotesis Utama (Sumber Masalah yang Paling Mungkin)
+Berdasarkan fakta:
+- Frontend menerima respons "sukses", tetapi backend tidak pernah mencatat log di controller.
+
+**Hipotesis:**
+- Middleware atau konfigurasi di level server/framework mencegat permintaan `multipart/form-data` sebelum mencapai `ProfileController`.
+- Respons tetap dikembalikan sebagai HTTP "sukses" (kemungkinan 302 Found atau 200 OK) oleh Inertia.js.
+- Ini menjelaskan:
+  - Tombol berfungsi
+  - Inertia menganggapnya sukses
+  - Halaman me-reload (sesuai respons redirect)
+  - Foto tidak tersimpan karena logika controller tidak pernah dijalankan
 
 ---
 
-## 6. 🔄 Diagram Alur Request (Login → Dashboard → API)
+## 5. Langkah Selanjutnya yang Disarankan
+Developer berikutnya harus fokus pada "jembatan" antara router dan controller:
 
-```mermaid
-flowchart TD
-    A[User Login di Frontend] --> B[POST /api/login]
-    B -->|Sukses| C[Token & Cookie Sesi Disimpan]
-    C --> D[Redirect ke /dashboard]
-    D --> E[Frontend Meminta Data GET /api/dashboard]
-    E -->|Gagal 401| F[auth:sanctum Tidak Mengenali Cookie]
-    F --> G[Solusi: Tambahkan Middleware Sesi di Kernel.php]
-```
-## 7. 📝 Tugas Programmer Selanjutnya
-🔑 Prioritas #1: Perbaiki Error 401
-Edit file app/Http/Kernel.php, tambahkan middleware sesi ke grup api:
+1. **Periksa Middleware Global & Grup**
+   - Tinjau semua middleware yang terdaftar di `bootstrap/app.php` di grup `web`.
+   - Periksa middleware pihak ketiga atau kustom yang mungkin mengganggu permintaan POST berisi file.
 
-```php
-'api' => [
-    // =================================================================
-    // TAMBAHKAN DUA BARIS INI UNTUK MEMPERBAIKI ERROR 401
-    // =================================================================
-    \App\Http\Middleware\EncryptCookies::class,
-    \Illuminate\Session\Middleware\StartSession::class,
-    // =================================================================
+2. **Debugging di Level Rute**
+   - Tempatkan `dd($request->all());` di `routes/web.php` untuk memastikan permintaan sampai di level routing.
+   ```php
+   // di routes/web.php
+   Route::post('/', function (Request $request) {
+       dd($request->all(), $request->hasFile('photo')); // Lakukan tes di sini
+       // ... panggil controller
+   })->name('update');
+3. **Periksa Konfigurasi PHP & Server**
+    - Periksa php.ini, khususnya post_max_size dan upload_max_filesize.
+    - Jika ukuran file foto melebihi batas ini, permintaan bisa gagal diam-diam.
 
-    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-    'throttle:api',
-    \Illuminate\Routing\Middleware\SubstituteBindings::class,
-],
-```
-## 🧹 Prioritas #2: Bersihkan Cache Laravel
-Setelah perubahan di atas, jalankan:
-
-```bash
-php artisan config:clear
-php artisan route:clear
-php artisan cache:clear
-```
-(Pastikan semua server dihentikan dulu: php artisan serve, npm run dev, dll.)
-
-## 8. ⚙️ Panduan Instalasi & Setup Lingkungan Development
-### A. Prasyarat (Software yang Harus Terinstal)
-
-- PHP 8.2+
-- Composer 2+
-- Node.js 18+ & NPM
-- PostgreSQL
-- Git
-
-### B. Setup Backend
-
-1. Clone repositori:
-```bash
-git clone -b frontend https://github.com/awanmh/PortalSantriCerdas.git
-cd projeknya(sesuaikan dengan nama projek)
-```
-2. Instal dependensi PHP:
-```bash
-composer install
-```
-
-3. Konfigurasi `.env`:
-```bash
-cp .env.example .env
-php artisan key:generate
-```
-
-Sesuaikan database:
-```.env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=smk_monitoring
-DB_USERNAME=postgres
-DB_PASSWORD=root
-```
-
-4. Migrasi & seeding:
-```bash
-php artisan migrate:fresh --seed
-```
-
-5. Instal Laravel Reverb:
-```bash
-php artisan reverb:install
-```
-
-### C. Setup Frontend
-
-1. Instal dependensi JavaScript:
-```bash
-npm install
-```
-2. Generate Ziggy route:
-```bash
-php artisan ziggy:generate
-```
-
-### D. Menjalankan Aplikasi
-Buka 3 terminal terpisah:
-
-1. Backend Laravel
-```bash
-php artisan serve
-```
-2. WebSocket Reverb
-```bash
-php artisan reverb:start
-```
-3. Frontend Vite
-```bash
-npm run dev
-```
-
-Akses aplikasi via URL Vite **(biasanya http://127.0.0.1:5173)**.
-
-## 9. ✅ Checklist To-Do
-
- - ✅ Backend selesai & stabil (99%)
- - ✅ Migrasi & seeder sukses
- - ✅ API utama teruji dengan Postman
- - ⬛ Perbaiki error 401 dengan update Kernel.php
- - ⬛ Bersihkan cache Laravel setelah perubahan
- - ⬛ Lanjutkan pengembangan frontend setelah error 401 teratasi
+4. **Periksa Konfigurasi Sanctum**
+    - Pastikan tidak ada konflik dengan otentikasi berbasis sesi web (EnsureFrontendRequestsAreStateful).

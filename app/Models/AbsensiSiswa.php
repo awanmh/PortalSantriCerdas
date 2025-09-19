@@ -2,43 +2,66 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AbsensiSiswa extends Model
 {
+    use HasFactory;
+
+    /**
+     * Nama tabel yang terhubung dengan model ini.
+     *
+     * @var string
+     */
     protected $table = 'absensi_siswa';
 
+    /**
+     * Atribut yang dapat diisi secara massal.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'siswa_id',
+        'user_id',
         'jadwal_id',
-        'waktu',
-        'foto_path',
-        'lat',
-        'lng',
+        'status',
+        'waktu_absensi',
+        'bukti_foto_path',
+        'latitude',
+        'longitude',
         'valid_zona',
         'device_info',
         'keterangan',
     ];
 
+    /**
+     * Atribut yang harus di-cast ke tipe data tertentu.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'waktu' => 'datetime',
+        'waktu_absensi' => 'datetime',
         'device_info' => 'array',
         'valid_zona' => 'boolean',
     ];
 
     /**
-     * Relasi ke siswa (User)
+     * Mendefinisikan relasi "belongsTo" ke model User (sebagai siswa).
+     * Setiap catatan absensi dimiliki oleh satu user.
      */
-    public function siswa()
+    public function siswa(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
-     * Relasi ke jadwal
+     * Mendefinisikan relasi "belongsTo" ke model Jadwal.
+     * Setiap catatan absensi terikat pada satu jadwal pelajaran.
      */
-    public function jadwal()
+    public function jadwal(): BelongsTo
     {
-        return $this->belongsTo(Jadwal::class, 'jadwal_id');
+        return $this->belongsTo(Jadwal::class);
     }
 }
+

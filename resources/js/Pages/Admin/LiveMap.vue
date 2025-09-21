@@ -8,9 +8,9 @@ import 'leaflet/dist/leaflet.css';
 // Hapus dependensi pada icon default Leaflet yang sering error
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
 const props = defineProps({
@@ -27,16 +27,13 @@ const statusMessage = ref('Pilih siswa untuk memulai pemantauan.');
 // Fungsi untuk inisialisasi peta
 const initMap = () => {
     if (mapContainer.value && !map) {
-        // Default view ke lokasi sekolah atau Surabaya jika tidak ada zona
         const initialCoords = props.zona ? [props.zona.lat, props.zona.lng] : [-7.2575, 112.7521];
-
         map = L.map(mapContainer.value).setView(initialCoords, 15);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Gambar zona sekolah di peta jika ada
         if (props.zona) {
             L.circle([props.zona.lat, props.zona.lng], {
                 color: 'green',
@@ -48,68 +45,68 @@ const initMap = () => {
     }
 };
 
-// Fungsi untuk mendengarkan broadcast lokasi
-const listenToSiswaLocation = (siswaId) => {
-    if (!siswaId) return;
-
-    // Hentikan listener sebelumnya
-    if (window.Echo.privateChannels['lokasi-siswa.' + selectedSiswaId.value]) {
-         window.Echo.leave('lokasi-siswa.' + selectedSiswaId.value);
-    }
-
-    selectedSiswaId.value = siswaId;
-    statusMessage.value = `Menunggu pembaruan lokasi dari siswa...`;
-
-    window.Echo.private('lokasi-siswa.' + siswaId)
-        .listen('LokasiSiswaDiperbarui', (e) => {
-            const { lat, lng } = e.lokasi;
-            const siswaName = e.siswa.name;
-            statusMessage.value = `Lokasi ${siswaName} diperbarui!`;
-
-            // Hapus marker lama jika ada
-            if (siswaMarkers.value[siswaId]) {
-                map.removeLayer(siswaMarkers.value[siswaId]);
-            }
-            
-            // Buat marker baru dan tambahkan ke peta
-            const newMarker = L.marker([lat, lng]).addTo(map)
-                .bindPopup(`<b>${siswaName}</b><br>Posisi saat ini.`)
-                .openPopup();
-
-            siswaMarkers.value[siswaId] = newMarker;
-            map.setView([lat, lng], 17);
-
-            // Cek apakah di luar zona
-            if (props.zona) {
-                const distance = map.distance([props.zona.lat, props.zona.lng], [lat, lng]);
-                if (distance > props.zona.radius) {
-                    alert(`PERINGATAN: ${siswaName} berada di luar zona sekolah!`);
-                    statusMessage.value = `PERINGATAN: ${siswaName} berada di luar zona sekolah!`;
+// --- PERBAIKAN UTAMA DI SINI ---
+// Fungsi untuk menunggu Echo siap, lalu memasang listener
+const waitForEchoAndListen = () => {
+    // Cek apakah Echo sudah siap
+    if (typeof window.Echo !== 'undefined') {
+        // Echo sudah siap, pasang watcher sekarang
+        watch(selectedSiswaId, (newSiswaId, oldSiswaId) => {
+            // 1. Tinggalkan channel lama jika ada
+            if (oldSiswaId) {
+                window.Echo.leave('lokasi-siswa.' + oldSiswaId);
+                if (siswaMarkers.value[oldSiswaId]) {
+                    map.removeLayer(siswaMarkers.value[oldSiswaId]);
+                    delete siswaMarkers.value[oldSiswaId];
                 }
             }
+
+            // 2. Dengarkan channel baru jika ada ID siswa yang dipilih
+            if (newSiswaId) {
+                statusMessage.value = `Menunggu pembaruan lokasi dari siswa...`;
+                window.Echo.private('lokasi-siswa.' + newSiswaId)
+                    .listen('LokasiSiswaDiperbarui', (e) => {
+                        const { lat, lng } = e.lokasi;
+                        const siswaName = e.siswa.name;
+                        statusMessage.value = `Lokasi ${siswaName} diperbarui!`;
+
+                        if (siswaMarkers.value[newSiswaId]) {
+                            map.removeLayer(siswaMarkers.value[newSiswaId]);
+                        }
+                        
+                        const newMarker = L.marker([lat, lng]).addTo(map)
+                            .bindPopup(`<b>${siswaName}</b><br>Posisi saat ini.`)
+                            .openPopup();
+
+                        siswaMarkers.value[newSiswaId] = newMarker;
+                        map.setView([lat, lng], 17);
+
+                        if (props.zona) {
+                            const distance = map.distance([props.zona.lat, props.zona.lng], [lat, lng]);
+                            if (distance > props.zona.radius) {
+                                statusMessage.value = `PERINGATAN: ${siswaName} berada di luar zona sekolah!`;
+                                // Ganti alert dengan pesan yang tidak mengganggu
+                                console.warn(`PERINGATAN: ${siswaName} berada di luar zona sekolah!`);
+                            }
+                        }
+                    });
+            }
         });
-};
-
-// Watcher untuk mengubah listener saat pilihan siswa berubah
-watch(selectedSiswaId, (newId, oldId) => {
-    if (oldId) {
-        window.Echo.leave('lokasi-siswa.' + oldId);
-        if (siswaMarkers.value[oldId]) {
-            map.removeLayer(siswaMarkers.value[oldId]);
-            delete siswaMarkers.value[oldId];
-        }
+    } else {
+        // Echo belum siap, coba lagi dalam 100 milidetik
+        setTimeout(waitForEchoAndListen, 100);
     }
-    listenToSiswaLocation(newId);
-});
-
+};
 
 onMounted(() => {
     initMap();
+    // Mulai proses menunggu Echo
+    waitForEchoAndListen();
 });
 
 onUnmounted(() => {
     // Pastikan kita berhenti mendengarkan saat komponen dihancurkan
-    if (selectedSiswaId.value) {
+    if (selectedSiswaId.value && typeof window.Echo !== 'undefined') {
         window.Echo.leave('lokasi-siswa.' + selectedSiswaId.value);
     }
 });

@@ -15,12 +15,6 @@ class LaporanAbsensiController extends Controller
 {
     /**
      * Menampilkan halaman laporan absensi siswa dengan filter.
-     *
-     * Metode ini mengambil data siswa dari kelas yang dipilih dan menggabungkannya
-     * dengan data absensi pada tanggal yang dipilih untuk membuat laporan harian.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Inertia\Response
      */
     public function index(Request $request): Response
     {
@@ -44,30 +38,30 @@ class LaporanAbsensiController extends Controller
             $siswasDiKelas = User::role('siswa')
                 ->whereHas('kelas', fn ($query) => $query->where('kelas.id', $filters['kelas_id']))
                 ->orderBy('name')
-                ->get();
+                ->get(['id', 'name']); // Hanya ambil kolom yang dibutuhkan
 
             // Ambil semua ID siswa di kelas tersebut untuk efisiensi query
             $siswaIds = $siswasDiKelas->pluck('id');
 
-            // Ambil semua data absensi untuk siswa-siswa tersebut pada tanggal yang dipilih
-            // Gunakan keyBy('user_id') untuk memetakan hasil agar mudah diakses
+            // Ambil data absensi dengan memfilter langsung pada tanggal di tabel absensi_siswa
             $absensiRecords = AbsensiSiswa::whereIn('user_id', $siswaIds)
-                ->whereHas('jadwal', fn ($query) => $query->where('tanggal', $filters['tanggal']))
+                ->whereDate('waktu_absensi', $filters['tanggal']) // <-- Filter yang benar
                 ->with('jadwal:id,mata_pelajaran') // Eager load untuk performa
                 ->get()
-                ->keyBy('user_id');
+                ->keyBy('user_id'); // Gunakan keyBy untuk memetakan hasil agar mudah diakses
 
             // 4. Gabungkan data siswa dengan data absensinya
             $laporan = $siswasDiKelas->map(function ($siswa) use ($absensiRecords) {
                 $absensi = $absensiRecords->get($siswa->id);
 
+                // Gunakan nullsafe operator (?->) untuk menghindari error jika $absensi null
                 return [
                     'id' => $siswa->id,
                     'nama' => $siswa->name,
-                    'status' => $absensi->status ?? 'alfa', // Default 'alfa' jika tidak ada catatan absensi
+                    'status' => $absensi?->status ?? 'alfa',
                     'waktu_absensi' => $absensi ? Carbon::parse($absensi->waktu_absensi)->format('H:i') : '-',
-                    'mata_pelajaran' => $absensi->jadwal->mata_pelajaran ?? '-',
-                    'keterangan' => $absensi->keterangan ?? '-',
+                    'mata_pelajaran' => $absensi?->jadwal?->mata_pelajaran ?? '-',
+                    'keterangan' => $absensi?->keterangan ?? '-',
                 ];
             });
         }
@@ -79,4 +73,16 @@ class LaporanAbsensiController extends Controller
             'kelasOptions' => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']),
         ]);
     }
+
+    /**
+     * --- PERBAIKAN DI SINI ---
+     * Menampilkan halaman laporan absensi untuk Admin.
+     * Method ini dipanggil oleh route 'admin.laporan.absensi.index'.
+     */
+    public function adminIndex(Request $request): Response
+    {
+        // Karena logikanya sama, kita hanya perlu memanggil method index() yang sudah ada.
+        return $this->index($request);
+    }
 }
+

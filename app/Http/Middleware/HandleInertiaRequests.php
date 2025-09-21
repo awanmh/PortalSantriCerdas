@@ -4,8 +4,6 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use Spatie\Permission\Models\Permission;
-use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -33,43 +31,30 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'auth' => fn () => [
+    'user' => $request->user() ? [
+        'id' => $request->user()->id,
+        'name' => $request->user()->name,
+        'email' => $request->user()->email,
+        'profile_photo_url' => $request->user()->profile_photo_url,
+        'roles' => $request->user()->getRoleNames(),
+        'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+        'kelas' => $request->user()->kelas->first(),
+    ] : null,
+    'token' => $request->session()->get('sanctum_token'),
+],
 
-            // Bagikan data otentikasi secara global
-            'auth' => function () use ($request) {
-                if (! $request->user()) {
-                    return null;
-                }
 
-                // --- LOGIKA PERIZINAN DIPERBARUI ---
-                $permissions = $request->user()->hasRole('it')
-                    // Jika user adalah 'it', berikan semua izin yang ada di sistem.
-                    ? Permission::pluck('name')
-                    // Jika bukan, berikan izin spesifik yang dimilikinya.
-                    : $request->user()->getAllPermissions()->pluck('name');
-
-                return [
-                    'user' => [
-                        'id'          => $request->user()->id,
-                        'name'        => $request->user()->name,
-                        'email'       => $request->user()->email,
-                        'roles'       => $request->user()->getRoleNames(),
-                        'permissions' => $permissions, // Menggunakan variabel yang sudah diproses
-                    ],
-                ];
-            },
-
-            // Bagikan rute Ziggy agar helper `route()` berfungsi di Vue
             'ziggy' => fn () => [
-                ...(new Ziggy)->toArray(),
+                ...(new \Tighten\Ziggy\Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
-
-            // Bagikan flash messages dari session untuk notifikasi
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
-                'info'    => fn () => $request->session()->get('info'),
+                'error' => fn () => $request->session()->get('error'),
+                'info' => fn () => $request->session()->get('info'),
             ],
         ];
     }
 }
+

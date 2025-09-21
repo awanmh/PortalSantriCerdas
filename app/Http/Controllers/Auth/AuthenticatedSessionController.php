@@ -28,17 +28,22 @@ class AuthenticatedSessionController extends Controller
      * Proses login user.
      */
     public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+{
+    $request->authenticate();
+    $request->session()->regenerate();
 
-        $request->session()->regenerate();
+    // Hapus token lama
+    $request->user()->tokens()->delete();
 
-        // --- PERUBAHAN DI SINI ---
-        // Kita menggunakan redirect()->route() secara langsung.
-        // Ini lebih tegas dan menghindari potensi konflik dengan helper intended().
-        // Setelah login, pengguna akan SELALU diarahkan ke rute 'dashboard'.
-        return redirect()->route('dashboard');
-    }
+    // Buat token baru sekali saja
+    $token = $request->user()->createToken('web')->plainTextToken;
+
+    // Simpan di session supaya bisa diambil di HandleInertiaRequests
+    session(['sanctum_token' => $token]);
+
+    return redirect()->route('dashboard');
+}
+
 
     /**
      * Logout user.

@@ -27,10 +27,10 @@ class KelasController extends Controller
             'kelas' => Kelas::with(['jurusan', 'waliKelas'])->orderBy('nama_kelas')->get(),
 
             // Data pendukung untuk form: daftar semua jurusan
-            'jurusans' => Jurusan::orderBy('nama')->get(['id', 'nama']),
+            'jurusan' => Jurusan::orderBy('nama')->get(['id', 'nama']),
             
             // Data pendukung untuk form: daftar semua guru
-            'gurus' => User::role('guru')->orderBy('name')->get(['id', 'name']),
+            'guru' => User::role('guru')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

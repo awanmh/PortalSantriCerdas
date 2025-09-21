@@ -21,4 +21,7 @@ export default {
     },
 
     plugins: [forms],
+
+    // 🔹 Tambahkan ini untuk mengaktifkan dark mode berbasis class
+    darkMode: 'class',
 }

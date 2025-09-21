@@ -13,10 +13,11 @@ use App\Http\Controllers\Api\ExportController;
 use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\LiveAbsensiController;
+use App\Http\Controllers\Api\LiveTrackingController; // <-- Pastikan ini di-import
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\ZonaController;
-use App\Http\Controllers\ProfileController; // <-- ProfileController
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,9 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 🔹 PROFILE API (GET, POST, PATCH, DELETE)
     Route::prefix('profile')->group(function () {
-        Route::get('/', [ProfileController::class, 'edit'])->name('api.profile.edit'); // GET profil
-        Route::match(['post', 'patch'], '/', [ProfileController::class, 'update'])->name('api.profile.update'); // POST/PATCH update
-        Route::delete('/', [ProfileController::class, 'destroy'])->name('api.profile.destroy'); // DELETE akun
+        Route::get('/', [ProfileController::class, 'edit'])->name('api.profile.edit');
+        Route::match(['post', 'patch'], '/', [ProfileController::class, 'update'])->name('api.profile.update');
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('api.profile.destroy');
     });
 
     // Dashboard
@@ -65,8 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('role:guru|bk|it')
             ->name('sesi.mulai');
 
-        Route::post('/lokasi/update', [LiveAbsensiController::class, 'updateLokasi'])
-            ->middleware('role:siswa')
+        // --- PERBAIKAN DI SINI ---
+        // Hapus 'auth:sanctum' yang berlebihan dari sini
+        Route::post('/lokasi/update', [LiveTrackingController::class, 'updateLokasi'])
+            ->middleware('role:siswa') // <-- HANYA periksa rolenya
             ->name('lokasi.update');
     });
 

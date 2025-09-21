@@ -5,7 +5,6 @@ namespace App\Events;
 use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -15,44 +14,39 @@ class LokasiSiswaDiperbarui implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /**
-     * User (siswa) yang lokasinya diperbarui.
-     *
-     * @var \App\Models\User
-     */
     public User $siswa;
-
-    /**
-     * Data lokasi baru [lat, lng].
-     *
-     * @var array
-     */
     public array $lokasi;
+    
+    /**
+     * ID Kelas tempat event ini akan disiarkan.
+     * @var int
+     */
+    private int $kelasId;
 
     /**
      * Buat instance event baru.
-     *
-     * @param \App\Models\User $siswa
-     * @param array $lokasi
      */
     public function __construct(User $siswa, array $lokasi)
     {
         $this->siswa = $siswa;
         $this->lokasi = $lokasi;
+        
+        // Asumsi: Seorang siswa tergabung dalam satu kelas.
+        // Dapatkan kelas pertama yang diikuti siswa.
+        // Anda mungkin perlu menambahkan error handling jika siswa tidak punya kelas.
+        $this->kelasId = $siswa->kelas()->first()->id; 
     }
 
     /**
      * Dapatkan channel tempat event ini akan disiarkan.
      *
-     * Ini adalah private channel yang hanya bisa didengarkan oleh pengguna yang berwenang (guru/bk/it).
-     * Channel dinamai secara unik untuk setiap siswa.
-     *
      * @return array<int, \Illuminate\Broadcasting\Channel>
      */
     public function broadcastOn(): array
     {
+        // UBAH INI: Siarkan ke channel kelas, bukan channel siswa
         return [
-            new PrivateChannel('lokasi-siswa.' . $this->siswa->id),
+            new PrivateChannel('live-absensi.' . $this->kelasId),
         ];
     }
 }

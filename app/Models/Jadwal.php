@@ -24,24 +24,21 @@ class Jadwal extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'mata_pelajaran',
-        'deskripsi',
-        'tanggal',
-        'jam_mulai',
-        'jam_selesai',
-        'tipe',
-        'kelas_id',
-        'guru_id',
-    ];
+    'mata_pelajaran',
+    'deskripsi',
+    'hari',
+    'jam_mulai',
+    'jam_selesai',
+    'tipe',
+    'kelas_id',
+    'guru_id',
+];
 
-    /**
-     * Tipe data native untuk atribut.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'tanggal' => 'date', // Otomatis mengubah 'tanggal' menjadi objek Carbon
-    ];
+protected $casts = [
+    'jam_mulai' => 'datetime:H:i',
+    'jam_selesai' => 'datetime:H:i',
+];
+
 
     /**
      * Mendefinisikan relasi ke model Kelas.

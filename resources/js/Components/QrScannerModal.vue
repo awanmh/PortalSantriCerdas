@@ -2,11 +2,10 @@
 import { ref, watch } from 'vue';
 import Modal from '@/Components/Modal.vue';
 import { QrcodeStream } from 'vue-qrcode-reader';
-// --- PERBAIKAN DI SINI: QrCodeIcon ditambahkan ke dalam import ---
-import { CameraIcon, ExclamationTriangleIcon, MapPinIcon, QrCodeIcon } from '@heroicons/vue/24/outline';
+// Ikon yang akan kita gunakan untuk UI yang lebih baik
+import { ArrowPathIcon, ExclamationTriangleIcon, MapPinIcon, QrCodeIcon } from '@heroicons/vue/24/outline';
 
 // --- PROPS & EMITS ---
-// Menerima data dari komponen induk (Guru.vue)
 const props = defineProps({
     show: {
         type: Boolean,
@@ -17,131 +16,158 @@ const props = defineProps({
         required: true,
     }
 });
-
-// Mendefinisikan event yang akan dikirim kembali ke induk
 const emit = defineEmits(['close', 'scan-success']);
 
 // --- STATE MANAGEMENT ---
-const isSubmitting = ref(false);
+const isProcessing = ref(false); // Mencegah pemindaian ganda saat sedang proses
 const statusMessage = ref("Arahkan kamera ke QR Code Absensi.");
 const errorMessage = ref("");
-const cameraError = ref(false);
 
-// --- FUNGSI-FUNGSI ---
+// --- STATE UNTUK FITUR KAMERA ---
+const selectedDevice = ref(null); // Kamera yang sedang aktif
+const devices = ref([]); // Daftar semua kamera yang tersedia
+
 /**
- * Fungsi ini dipanggil secara otomatis oleh QrcodeStream saat QR code terdeteksi.
- * @param {Array} detectedCodes - Array berisi data dari QR code yang terdeteksi.
+ * Dipanggil saat kamera berhasil diinisialisasi.
+ * Fungsi ini akan mendaftar semua kamera yang tersedia di perangkat.
+ */
+const onCameraReady = async () => {
+    errorMessage.value = ''; // Hapus pesan error lama
+    try {
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
+        devices.value = allDevices.filter(({ kind }) => kind === 'videoinput');
+        
+        if (devices.value.length > 0 && !selectedDevice.value) {
+            // Pilih kamera belakang (environment) sebagai default jika ada
+            const rearCamera = devices.value.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('environment'));
+            selectedDevice.value = rearCamera || devices.value[0];
+        }
+    } catch (error) {
+        console.error("Tidak bisa mengakses perangkat kamera:", error);
+        errorMessage.value = "Tidak bisa mengakses daftar kamera. Pastikan izin telah diberikan.";
+    }
+};
+
+/**
+ * Beralih ke kamera berikutnya yang tersedia (depan/belakang).
+ */
+const switchCamera = () => {
+    if (devices.value.length > 1) {
+        const currentIndex = devices.value.findIndex(device => device.deviceId === selectedDevice.value.deviceId);
+        const nextIndex = (currentIndex + 1) % devices.value.length;
+        selectedDevice.value = devices.value[nextIndex];
+    }
+};
+
+/**
+ * Dipanggil saat QR code berhasil terdeteksi.
  */
 const onDetect = (detectedCodes) => {
-    if (isSubmitting.value) return; // Mencegah pemindaian ganda
+    if (isProcessing.value || detectedCodes.length === 0) return;
 
-    isSubmitting.value = true;
-    errorMessage.value = "";
+    isProcessing.value = true;
     statusMessage.value = "✅ QR Code terdeteksi. Mendapatkan lokasi GPS...";
-
+    
     const qrData = detectedCodes[0].rawValue;
 
-    // 1. Periksa dukungan Geolocation
-    if (!navigator.geolocation) {
-        errorMessage.value = "GPS tidak didukung oleh browser ini.";
-        isSubmitting.value = false;
-        return;
-    }
-
-    // 2. Ambil lokasi GPS saat ini
     navigator.geolocation.getCurrentPosition(
         (position) => {
-            statusMessage.value = "✅ Lokasi berhasil didapat. Mengirim data...";
-            
-            // 3. Siapkan payload untuk dikirim ke API
+            statusMessage.value = "✅ Lokasi didapat. Mengirim data ke server...";
             const payload = {
                 qr_data: qrData,
-                tipe: props.tipe,
+                tipe_absensi: props.tipe,
                 location: {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude,
                 }
             };
-
-            // 4. Kirim data kembali ke komponen induk (Guru.vue)
+            // Kirim data kembali ke Dashboard Guru untuk diproses
             emit('scan-success', payload);
         },
         (geoError) => {
-            errorMessage.value = `Gagal mendapatkan lokasi: ${geoError.message}`;
-            isSubmitting.value = false;
+            errorMessage.value = `Gagal mendapatkan lokasi GPS: ${geoError.message}`;
+            isProcessing.value = false; // Izinkan scan ulang jika GPS gagal
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 };
 
 /**
- * Menangani error saat kamera gagal diinisialisasi.
+ * Menangani berbagai jenis error dari kamera.
  */
-const onCameraError = (error) => {
-    cameraError.value = true;
+const onError = (error) => {
     if (error.name === 'NotAllowedError') {
-        errorMessage.value = "Izin akses kamera ditolak. Silakan izinkan di pengaturan browser Anda.";
+        errorMessage.value = 'Izin akses kamera ditolak. Mohon izinkan akses kamera di pengaturan browser Anda.';
+    } else if (error.name === 'NotFoundError') {
+        errorMessage.value = 'Tidak ada kamera yang ditemukan di perangkat ini.';
+    } else if (error.name === 'NotReadableError') {
+        errorMessage.value = 'Kamera sedang digunakan oleh aplikasi lain.';
     } else {
-        errorMessage.value = "Kamera tidak dapat diakses atau tidak ditemukan.";
+        errorMessage.value = `Terjadi error pada kamera: ${error.name}`;
     }
 };
 
-/**
- * Mereset state saat modal ditutup.
- */
 const closeModal = () => {
     emit('close');
 };
 
-// Mengawasi prop 'show' untuk mereset state setiap kali modal dibuka
-watch(() => props.show, (newVal) => {
-    if (newVal) {
-        isSubmitting.value = false;
+// Mereset state setiap kali modal dibuka
+watch(() => props.show, (isVisible) => {
+    if (isVisible) {
+        isProcessing.value = false;
         statusMessage.value = "Arahkan kamera ke QR Code Absensi.";
         errorMessage.value = "";
-        cameraError.value = false;
     }
 });
-
 </script>
 
 <template>
     <Modal :show="show" @close="closeModal" :max-width="'sm'">
-        <div class="p-6">
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg">
             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
-                <QrCodeIcon class="w-6 h-6 mr-2" />
-                Pindai QR Code Absensi ({{ tipe === 'masuk' ? 'Masuk' : 'Pulang' }})
+                <QrCodeIcon class="w-6 h-6 mr-2 text-indigo-500" />
+                Absensi {{ tipe === 'masuk' ? 'Masuk' : 'Pulang' }}
             </h2>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Pastikan kamera memiliki izin, cahaya cukup, dan Anda berada di dalam zona.
-            </p>
 
-            <!-- Area Scanner & Status -->
-            <div class="mt-4 p-4 border-2 border-dashed rounded-lg text-center relative">
+            <div class="mt-4 relative w-full aspect-square bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
                 <!-- Tampilan Kamera -->
-                <QrcodeStream
-                    v-if="!cameraError && !isSubmitting"
-                    @detect="onDetect"
-                    @error="onCameraError"
+                <qrcode-stream 
+                    :constraints="{ deviceId: selectedDevice?.deviceId }"
+                    @detect="onDetect" 
+                    @error="onError"
+                    @camera-on="onCameraReady"
+                    v-if="show"
+                    class="transition-opacity duration-300"
+                    :class="{ 'opacity-20': isProcessing }"
                 />
-
-                <!-- Indikator Loading & Error -->
-                <div v-if="cameraError || isSubmitting" class="flex flex-col items-center justify-center h-48">
-                    <ExclamationTriangleIcon v-if="cameraError" class="w-12 h-12 text-red-400 mb-2" />
-                    <MapPinIcon v-if="isSubmitting" class="w-12 h-12 text-blue-400 mb-2 animate-pulse" />
-                    <p class="text-sm font-semibold" :class="errorMessage ? 'text-red-600' : 'text-blue-600'">
+                
+                <!-- Overlay untuk Status & Error -->
+                <div 
+                    v-if="errorMessage || isProcessing" 
+                    class="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center p-4 text-center"
+                >
+                    <ExclamationTriangleIcon v-if="errorMessage" class="w-12 h-12 text-red-400 mb-2" />
+                    <MapPinIcon v-if="isProcessing && !errorMessage" class="w-12 h-12 text-blue-400 mb-2 animate-pulse" />
+                    <p class="text-white font-semibold" :class="{ 'text-red-400': errorMessage }">
                         {{ errorMessage || statusMessage }}
                     </p>
                 </div>
             </div>
-
-            <!-- Tombol Aksi -->
-            <div class="mt-6 flex justify-end">
-                <button
-                    @click="closeModal"
-                    type="button"
-                    class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            
+            <div class="mt-4 flex justify-between items-center">
+                <!-- Tombol Ganti Kamera (hanya muncul jika ada > 1 kamera) -->
+                <button 
+                    v-if="devices.length > 1"
+                    @click="switchCamera"
+                    :disabled="isProcessing"
+                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                 >
+                    <ArrowPathIcon class="w-5 h-5" />
+                    Ganti Kamera
+                </button>
+
+                <!-- Tombol Batal -->
+                <button @click="closeModal" class="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700">
                     Tutup
                 </button>
             </div>

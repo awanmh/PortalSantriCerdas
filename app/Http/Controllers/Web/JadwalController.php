@@ -11,34 +11,41 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Controller untuk mengelola data master Jadwal Pelajaran.
- */
 class JadwalController extends Controller
 {
     /**
      * Menampilkan halaman daftar semua jadwal.
-     * Juga mengirimkan data pendukung untuk form tambah/edit.
+     * Menyertakan data pendukung untuk form tambah/edit.
      */
     public function index(): Response
     {
-        // Ambil data jadwal dengan paginasi dan relasinya (eager loading)
+        // Ambil semua jadwal dengan relasi kelas dan guru
+        // Urutkan berdasarkan hari (Senin–Minggu) dan jam_mulai
         $jadwals = Jadwal::with(['kelas.jurusan', 'guru'])
-            ->orderBy('tanggal', 'desc')
+            ->orderByRaw("
+                CASE hari
+                    WHEN 'Senin' THEN 1
+                    WHEN 'Selasa' THEN 2
+                    WHEN 'Rabu' THEN 3
+                    WHEN 'Kamis' THEN 4
+                    WHEN 'Jumat' THEN 5
+                    WHEN 'Sabtu' THEN 6
+                    WHEN 'Minggu' THEN 7
+                    ELSE 8
+                END
+            ")
             ->orderBy('jam_mulai', 'asc')
-            ->paginate(10)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('Admin/Jadwal/Index', [
-            // --- PERUBAHAN NAMA KEY DI BAWAH INI ---
-            'jadwal' => $jadwals,                             // Diubah dari 'jadwals'
-            'kelasOptions' => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']), // Diubah dari 'kelas'
-            'guruOptions' => User::role('guru')->orderBy('name')->get(['id', 'name']),   // Diubah dari 'gurus'
+            'jadwal'       => $jadwals,
+            'kelasOptions' => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']),
+            'guruOptions'  => User::role('guru')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /**
-     * Menyimpan jadwal baru ke database.
+     * Simpan jadwal baru ke database.
      */
     public function store(JadwalRequest $request): RedirectResponse
     {
@@ -49,7 +56,7 @@ class JadwalController extends Controller
     }
 
     /**
-     * Memperbarui jadwal di database.
+     * Perbarui jadwal di database.
      */
     public function update(JadwalRequest $request, Jadwal $jadwal): RedirectResponse
     {
@@ -60,7 +67,7 @@ class JadwalController extends Controller
     }
 
     /**
-     * Menghapus jadwal dari database.
+     * Hapus jadwal dari database.
      */
     public function destroy(Jadwal $jadwal): RedirectResponse
     {
@@ -70,4 +77,3 @@ class JadwalController extends Controller
             ->with('success', 'Jadwal berhasil dihapus.');
     }
 }
-

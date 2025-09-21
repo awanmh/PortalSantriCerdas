@@ -1,83 +1,116 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, ref, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { ClockIcon, UserIcon, MapPinIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
-import axios from 'axios';
+import http from '@/requests';
 
-// Menerima props dari DashboardController
 const props = defineProps({
-    jadwalHariIni: {
-        type: Array,
-        required: true,
-    },
-    kelasSiswa: {
-        type: Object,
-        default: null,
-    },
+    jadwalHariIni: { type: Array, required: true },
+    kelasSiswa: { type: Object, default: null },
 });
 
 const page = usePage();
-const user = computed(() => page.props.auth.user);
+const auth = computed(() => page.props.auth);
+const user = computed(() => auth.value?.user || {});
+const token = computed(() => auth.value?.token);
 const flash = computed(() => page.props.flash);
 const namaKelas = computed(() => props.kelasSiswa?.nama_kelas || 'Kelas tidak ditemukan');
 
-// --- STATE UNTUK LIVE TRACKING ---
-const isTracking = ref(false);
 const trackingInterval = ref(null);
-const trackingStatus = ref('Nonaktif');
+const trackingStatus = ref('Menginisialisasi...');
+const trackingColor = ref('text-gray-500');
 
-// --- FUNGSI UNTUK LIVE TRACKING ---
-const toggleTracking = () => {
-    if (isTracking.value) {
-        // Hentikan pelacakan
-        clearInterval(trackingInterval.value);
-        isTracking.value = false;
-        trackingStatus.value = 'Sesi dihentikan.';
+// SIMPAN TOKEN KE LOCALSTORAGE SAAT KOMPONEN DIMUAT
+onMounted(() => {
+    if (token.value) {
+        localStorage.setItem('sanctum_token', token.value);
+        console.log('[DEBUG] Token Sanctum disimpan:', token.value.substring(0, 20) + '...');
     } else {
-        // Mulai pelacakan
-        isTracking.value = true;
-        trackingStatus.value = 'Mendapatkan lokasi awal...';
-        sendLocationUpdate(); // Kirim lokasi pertama kali
-        // Kirim lokasi setiap 30 detik
-        trackingInterval.value = setInterval(sendLocationUpdate, 30000);
+        console.warn('[DEBUG] Token Sanctum tidak tersedia');
     }
+
+    if (user.value.roles && user.value.roles.includes('siswa')) {
+        startAutomaticTracking();
+    } else {
+        trackingStatus.value = 'Error: Hanya untuk siswa';
+        trackingColor.value = 'text-red-500';
+    }
+});
+
+const startAutomaticTracking = () => {
+    trackingStatus.value = 'Mencoba mendapatkan lokasi GPS...';
+    trackingColor.value = 'text-yellow-500 animate-pulse';
+    sendLocationUpdate();
+    trackingInterval.value = setInterval(sendLocationUpdate, 30000);
 };
 
-const sendLocationUpdate = () => {
+const sendLocationUpdate = async () => {
     if (!navigator.geolocation) {
-        trackingStatus.value = 'GPS tidak didukung oleh browser ini.';
-        isTracking.value = false;
+        trackingStatus.value = 'Error: GPS tidak didukung browser ini.';
+        trackingColor.value = 'text-red-500';
         clearInterval(trackingInterval.value);
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            trackingStatus.value = `Lokasi diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
-            // Menggunakan Axios untuk mengirim data ke API endpoint
-            axios.post(route('api.live.lokasi.update'), {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-            }).catch(err => {
-                trackingStatus.value = 'Gagal mengirim lokasi ke server.';
-                console.error(err);
-                // Hentikan jika ada error, misal token kedaluwarsa atau server mati
-                clearInterval(trackingInterval.value);
-                isTracking.value = false;
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             });
-        },
-        (err) => {
-            trackingStatus.value = 'Gagal mendapatkan lokasi GPS. Pastikan izin diberikan.';
-            console.error(err);
-            isTracking.value = false;
-            clearInterval(trackingInterval.value);
-        },
-        { enableHighAccuracy: true }
-    );
+        });
+
+        console.log(`[DEBUG] Lokasi didapat: Lat ${position.coords.latitude}, Lng ${position.coords.longitude}`);
+
+        // CEK TOKEN SEBELUM MENGIRIM
+        const currentToken = localStorage.getItem('sanctum_token');
+        if (!currentToken) {
+            throw new Error('Token tidak tersedia');
+        }
+
+        trackingStatus.value = `Aktif - Lokasi diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
+        trackingColor.value = 'text-green-500';
+
+        // GUNAKAN http BUKAN window.axios
+        const response = await http.post(route('api.live.lokasi.update'), {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+        });
+        
+        console.log('[DEBUG] Lokasi berhasil dikirim ke server:', response.data);
+
+    } catch (err) {
+        clearInterval(trackingInterval.value);
+
+        if (err.code === 1) {
+            trackingStatus.value = 'Error: Izin lokasi ditolak.';
+            trackingColor.value = 'text-red-500';
+            console.error('[DEBUG] Izin lokasi ditolak');
+        } else if (err.response?.status === 401) {
+            trackingStatus.value = 'Error: Autentikasi gagal (401).';
+            trackingColor.value = 'text-red-500';
+            console.error('[DEBUG] Error 401 - Token mungkin expired:', err.response);
+            
+            // Hapus token yang expired
+            localStorage.removeItem('sanctum_token');
+            
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 3000);
+        } else if (err.message === 'Token tidak tersedia') {
+            trackingStatus.value = 'Error: Token autentikasi tidak tersedia.';
+            trackingColor.value = 'text-red-500';
+            console.error('[DEBUG] Token Sanctum tidak ditemukan');
+        } else {
+            trackingStatus.value = 'Error: Gagal mengirim lokasi.';
+            trackingColor.value = 'text-red-500';
+            console.error('[DEBUG] Error:', err);
+        }
+    }
 };
 
-// Pastikan interval berhenti saat pengguna meninggalkan halaman untuk mencegah memory leak
 onUnmounted(() => {
     if (trackingInterval.value) {
         clearInterval(trackingInterval.value);
@@ -90,16 +123,21 @@ onUnmounted(() => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Dashboard Siswa</h2>
-                <p class="text-sm text-gray-500 mt-1">Selamat datang kembali, {{ user.name }}!</p>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Dashboard Siswa</h2>
+                    <p class="text-sm text-gray-500 mt-1">Selamat datang kembali, {{ user?.name }}!</p>
+                </div>
+                <div class="mt-2 sm:mt-0 flex items-center p-2 rounded-lg bg-gray-200 dark:bg-gray-700">
+                    <MapPinIcon class="w-5 h-5 mr-2" :class="trackingColor" />
+                    <span class="text-xs font-semibold" :class="trackingColor">{{ trackingStatus }}</span>
+                </div>
             </div>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-                <!-- Notifikasi Flash Message -->
                 <div v-if="flash?.success" class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-lg flex items-center shadow-md" role="alert">
                     <CheckCircleIcon class="h-6 w-6 mr-3"/>
                     <span class="font-medium">{{ flash.success }}</span>
@@ -109,26 +147,6 @@ onUnmounted(() => {
                     <span class="font-medium">{{ flash.info }}</span>
                 </div>
 
-                <!-- Kartu Live Tracking -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                    <div class="p-6 text-gray-900 dark:text-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                        <div>
-                            <h3 class="font-bold text-lg flex items-center">
-                                <MapPinIcon class="w-6 h-6 mr-2 text-red-500" />
-                                Sesi Lacak Lokasi
-                            </h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Aktifkan untuk membagikan lokasi Anda selama jam sekolah.</p>
-                            <p v-if="isTracking" class="text-xs text-green-600 dark:text-green-400 mt-1 animate-pulse">{{ trackingStatus }}</p>
-                            <p v-else class="text-xs text-gray-500 mt-1">{{ trackingStatus }}</p>
-                        </div>
-                        <button @click="toggleTracking" class="mt-4 sm:mt-0 px-6 py-2 font-semibold rounded-lg shadow transition-colors"
-                            :class="isTracking ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'">
-                            {{ isTracking ? 'Hentikan Sesi' : 'Mulai Sesi Lacak' }}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Jadwal Pelajaran -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 md:p-8 text-gray-900">
                         <h3 class="text-2xl font-bold mb-1 dark:text-white">Jadwal Pelajaran Hari Ini</h3>
@@ -153,12 +171,13 @@ onUnmounted(() => {
                                 </div>
                                 <Link
                                     :href="route('absen.create', jadwal.id)"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-transform transform hover:scale-105"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700"
                                 >
                                     Absen Sekarang
                                 </Link>
                             </div>
                         </div>
+
                         <div v-else class="text-center py-10 px-6 border-2 border-dashed rounded-lg dark:border-gray-700">
                             <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">Tidak Ada Jadwal</h3>
                             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Anda tidak memiliki jadwal pelajaran untuk hari ini. Selamat beristirahat!</p>

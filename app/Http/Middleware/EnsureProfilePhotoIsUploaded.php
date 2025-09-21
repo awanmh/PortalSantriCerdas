@@ -15,18 +15,13 @@ class EnsureProfilePhotoIsUploaded
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // --- PERBAIKAN DI SINI ---
-        // Jika sesi memiliki "tanda" bahwa foto baru saja diunggah,
-        // lewati semua pemeriksaan dan langsung lanjutkan ke permintaan berikutnya (dashboard).
-        // Tanda ini hanya berlaku untuk satu permintaan dan akan otomatis hilang setelahnya.
-        if ($request->session()->has('photo_just_uploaded')) {
-            return $next($request);
-        }
-
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // Cek jika user adalah siswa, belum punya foto, dan tidak sedang di halaman profil/logout
+        // --- UNTUK SEMENTARA, LOGIKA INI DINONAKTIFKAN ---
+        // Dengan mengomentari blok 'if' ini, siswa tidak akan lagi dipaksa
+        // untuk pergi ke halaman profil jika mereka belum mengunggah foto.
+        /*
         if (
             $user &&
             $user->hasRole('siswa') &&
@@ -38,6 +33,7 @@ class EnsureProfilePhotoIsUploaded
             return redirect()->route('profile.edit')
                 ->with('info', 'Anda harus mengunggah foto profil terlebih dahulu untuk melanjutkan.');
         }
+        */
 
         return $next($request);
     }

@@ -18,6 +18,24 @@ class ProfileUpdateRequest extends FormRequest
         /** @var \App\Models\User $user */
         $user = $this->user();
 
+        // --- PERBAIKAN DI SINI ---
+        // Logika validasi sekarang dibagi menjadi dua skenario:
+        // 1. Jika permintaan berisi file 'photo', kita hanya validasi foto.
+        // 2. Jika tidak, kita validasi data teks (nama dan email).
+
+        // Skenario 1: Permintaan ini adalah untuk mengunggah foto.
+        if ($this->hasFile('photo')) {
+            return [
+                'photo' => [
+                    'required', // Foto wajib ada jika ini adalah permintaan unggah foto
+                    'image',
+                    'mimes:jpg,jpeg,png',
+                    'max:2048', // Maksimal 2MB
+                ],
+            ];
+        }
+
+        // Skenario 2: Permintaan ini adalah untuk memperbarui nama dan email.
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -28,16 +46,6 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id),
             ],
-            // Foto sekarang 'required' (wajib) HANYA JIKA:
-            // 1. Pengguna memiliki peran 'siswa'.
-            // 2. Kolom 'profile_photo_path' di database masih kosong (null).
-            'photo' => [
-                Rule::requiredIf(fn () => $user->hasRole('siswa') && is_null($user->profile_photo_path)),
-                'nullable', // Tetap nullable agar tidak error jika tidak ada file yang dikirim
-                'image',
-                'mimes:jpg,jpeg,png',
-                'max:2048',
-            ],
         ];
     }
 
@@ -47,8 +55,10 @@ class ProfileUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'photo.required' => 'Anda harus mengunggah foto profil untuk melanjutkan.',
+            'photo.required' => 'Anda harus memilih file gambar untuk diunggah.',
+            'photo.image' => 'File yang dipilih harus berupa gambar.',
+            'photo.mimes' => 'Foto harus berformat JPG, JPEG, atau PNG.',
+            'photo.max' => 'Ukuran foto tidak boleh lebih dari 2MB.',
         ];
     }
 }
-

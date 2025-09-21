@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Kelas;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,14 +33,13 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                // Mengirim seluruh array roles untuk fleksibilitas di frontend
+                // Mengirim array roles untuk fleksibilitas di frontend
                 'roles' => $user->roles->map(fn($role) => ['id' => $role->id, 'name' => $role->name]),
-                'created_at' => $user->created_at, // Biarkan frontend yang memformat tanggal
+                'created_at' => $user->created_at,
             ]);
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
-            // DIHAPUS: Baris 'flash' tidak diperlukan, Inertia menanganinya secara otomatis.
         ]);
     }
 
@@ -49,8 +49,8 @@ class UserController extends Controller
     public function create(): Response
     {
         return Inertia::render('Admin/Users/Create', [
-            // DIUBAH: Mengirim array objek (id & name) agar bisa di-loop di Vue
             'roles' => Role::all(['id', 'name']),
+            'kelas' => Kelas::all(['id', 'nama_kelas']),
         ]);
     }
 
@@ -64,6 +64,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => ['required', 'string', Rule::exists('roles', 'name')],
+            'kelas_id' => ['nullable', 'integer', Rule::exists('kelas', 'id')],
         ]);
 
         $user = User::create([
@@ -74,7 +75,11 @@ class UserController extends Controller
 
         $user->assignRole($validated['role']);
 
-        // Redirect dengan flash message 'success'
+        // Jika rolenya siswa dan kelas_id diberikan, masukkan ke kelas
+        if ($validated['role'] === 'siswa' && !empty($validated['kelas_id'])) {
+            $user->kelas()->attach($validated['kelas_id']);
+        }
+
         return redirect()->route('admin.users.index')
             ->with('success', 'Pengguna baru berhasil ditambahkan.');
     }
@@ -84,17 +89,13 @@ class UserController extends Controller
      */
     public function edit(User $user): Response
     {
-        $user->load('roles:id,name');
+        // Muat relasi yang dibutuhkan oleh frontend (Edit.vue)
+        $user->load(['roles:id,name', 'kelas:id,nama_kelas']);
 
         return Inertia::render('Admin/Users/Edit', [
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->roles->first()->name ?? null,
-            ],
-            // DIUBAH: Menyesuaikan dengan method create()
+            'user' => $user, // Kirim seluruh objek user dengan relasi
             'roles' => Role::all(['id', 'name']),
+            'kelas' => Kelas::all(['id', 'nama_kelas']),
         ]);
     }
 
@@ -106,20 +107,29 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => ['nullable', 'confirmed', Password::defaults()],
             'role' => ['required', 'string', Rule::exists('roles', 'name')],
+            'kelas_id' => ['nullable', 'integer', Rule::exists('kelas', 'id')],
         ]);
 
-        $user->update([
+        // Siapkan data untuk diupdate
+        $updateData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
-        ]);
+        ];
 
-        if (!empty($validated['password'])) {
-            $user->update(['password' => Hash::make($validated['password'])]);
-        }
+        $user->update($updateData);
 
+        // Update role pengguna
         $user->syncRoles($validated['role']);
+
+        // Update kelas pengguna jika rolenya siswa
+        if ($validated['role'] === 'siswa') {
+            // sync() akan menangani penambahan, pembaruan, atau penghapusan dari kelas
+            $user->kelas()->sync($validated['kelas_id'] ?? []);
+        } else {
+            // Jika role bukan lagi siswa, hapus dari semua kelas
+            $user->kelas()->detach();
+        }
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Data pengguna berhasil diperbarui.');

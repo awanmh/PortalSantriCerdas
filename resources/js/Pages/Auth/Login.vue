@@ -5,7 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import Checkbox from '@/Components/Checkbox.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue'; // <-- Import kembali PrimaryButton
+import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 // Logika form kembali seperti semula
 const form = useForm({
@@ -14,6 +14,7 @@ const form = useForm({
     remember: false,
 });
 
+// HANYA GUNAKAN FUNGSI SUBMIT DARI INERTIA INI
 const submit = () => {
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
@@ -73,7 +74,6 @@ const submit = () => {
                     Lupa password?
                 </Link>
 
-                <!-- KEMBALI MENGGUNAKAN PRIMARYBUTTON, TAPI DENGAN TYPE="SUBMIT" -->
                 <PrimaryButton
                     class="ms-4"
                     :class="{ 'opacity-25': form.processing }"
@@ -86,4 +86,3 @@ const submit = () => {
         </form>
     </GuestLayout>
 </template>
-

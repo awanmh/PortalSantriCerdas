@@ -19,6 +19,18 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
+// --- PERBAIKAN DI SINI ---
+// Tambahkan channel untuk fitur Live Map
+Broadcast::channel('lokasi-siswa.{siswaId}', function ($user, $siswaId) {
+    // Izinkan jika user memiliki salah satu dari role berikut.
+    // Variabel $siswaId tidak perlu digunakan di sini, tapi wajib ada
+    // agar nama channelnya cocok.
+    if ($user->hasAnyRole(['it', 'guru', 'bk'])) {
+        return true;
+    }
+    return false;
+});
+
 // --- CHANNEL UNTUK FITUR LIVE ABSENSI ---
 // Hanya guru/it/bk yang bisa mendengarkan lokasi siswa di kelas tertentu.
 Broadcast::channel('live-absensi.{kelasId}', function ($user, $kelasId) {

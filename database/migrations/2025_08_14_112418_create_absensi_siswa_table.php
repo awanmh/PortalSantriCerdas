@@ -14,25 +14,23 @@ return new class extends Migration
         Schema::create('absensi_siswa', function (Blueprint $table) {
             $table->id();
 
-            // Kolom relasi inti (menggunakan user_id untuk konsistensi)
+            // Kolom relasi inti
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('jadwal_id')->constrained('jadwal')->onDelete('cascade');
 
-            // --- Kolom Kunci yang Ditambahkan ---
+            // Kolom status dan detail absensi
             $table->enum('status', ['hadir', 'sakit', 'izin', 'alfa'])->default('hadir');
-            
-            // Mengambil kolom-kolom canggih dari versi Anda
             $table->timestamp('waktu_absensi');
             $table->string('bukti_foto_path')->nullable();
-            $table->decimal('latitude', 10, 7)->nullable();
-            $table->decimal('longitude', 10, 7)->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
             $table->boolean('valid_zona')->default(false);
             $table->json('device_info')->nullable();
             $table->text('keterangan')->nullable();
 
             $table->timestamps();
 
-            // Menambahkan unique constraint untuk mencegah absensi ganda
+            // Mencegah absensi ganda untuk user dan jadwal yang sama
             $table->unique(['user_id', 'jadwal_id'], 'absensi_unik');
         });
     }
@@ -45,4 +43,3 @@ return new class extends Migration
         Schema::dropIfExists('absensi_siswa');
     }
 };
-

@@ -12,9 +12,15 @@ const props = defineProps({
     },
     contentClasses: {
         type: String,
-        default: 'py-1 bg-white',
+        default: 'py-1 bg-white dark:bg-gray-800', // tambahkan dark mode
     },
 });
+
+const open = ref(false);
+
+const toggleOpen = () => {
+    open.value = !open.value;
+};
 
 const closeOnEscape = (e) => {
     if (open.value && e.key === 'Escape') {
@@ -40,23 +46,23 @@ const alignmentClasses = computed(() => {
         return 'origin-top';
     }
 });
-
-const open = ref(false);
 </script>
 
 <template>
     <div class="relative">
-        <div @click="open = !open">
+        <!-- Trigger -->
+        <div @click="toggleOpen">
             <slot name="trigger" />
         </div>
 
-        <!-- Full Screen Dropdown Overlay -->
+        <!-- Overlay untuk klik di luar -->
         <div
             v-show="open"
             class="fixed inset-0 z-40"
             @click="open = false"
         ></div>
 
+        <!-- Dropdown Content -->
         <Transition
             enter-active-class="transition ease-out duration-200"
             enter-from-class="opacity-0 scale-95"
@@ -69,11 +75,9 @@ const open = ref(false);
                 v-show="open"
                 class="absolute z-50 mt-2 rounded-md shadow-lg"
                 :class="[widthClass, alignmentClasses]"
-                style="display: none"
-                @click="open = false"
             >
                 <div
-                    class="rounded-md ring-1 ring-black ring-opacity-5"
+                    class="rounded-md ring-1 ring-black ring-opacity-5 dark:ring-white/20"
                     :class="contentClasses"
                 >
                     <slot name="content" />

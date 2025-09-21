@@ -39,7 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('edit');
-        Route::post('/', [ProfileController::class, 'update'])->name('update');
+        Route::match(['post', 'patch'], '/', [ProfileController::class, 'update'])->name('update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
     });
 
@@ -49,14 +49,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [AbsensiController::class, 'store'])->name('store');
     });
 
-    // --- RUTE UMUM UNTUK GURU, BK, & IT ---
+    // --- RUTE LAPORAN ABSENSI UNTUK GURU & BK ---
+    Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'index'])
+        ->name('laporan.absensi.index')
+        ->middleware('role:guru|bk|it'); // PERBAIKAN: Tambahkan role it agar bisa diakses juga
+
+    // --- RUTE UMUM UNTUK GURU & BK (Non-Admin) ---
     Route::resource('catatan-pelanggaran', CatatanPelanggaranController::class)
         ->except(['show'])
         ->middleware('role:guru|bk|it');
-
-    Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'index'])
-        ->name('laporan.absensi.index')
-        ->middleware('can:view laporan absensi');
 
     Route::get('/live-map', [LiveMapController::class, 'index'])
         ->name('live-map.index')
@@ -69,10 +70,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('jurusan', JurusanController::class)->except(['show', 'create', 'edit'])->middleware('can:manage jurusan');
         Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->middleware('can:manage kelas');
         Route::resource('jadwal', JadwalController::class)->except(['show', 'create', 'edit'])->middleware('can:manage jadwal');
-            
-        // Laporan Absensi (versi Admin dengan nama rute yang unik)
-        Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'index'])
-            ->name('admin.laporan.absensi.index') // <-- NAMA DIPERBAIKI
+        
+        // --- RUTE LAPORAN ABSENSI ADMIN (VERSI KHUSUS ADMIN) ---
+        Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'adminIndex'])
+            ->name('laporan.absensi.index') // Nama rute yang berbeda
             ->middleware('can:view laporan absensi');
     });
 });
@@ -81,4 +82,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
  * Memuat rute-rute otentikasi dari file terpisah.
  */
 require __DIR__.'/auth.php';
-

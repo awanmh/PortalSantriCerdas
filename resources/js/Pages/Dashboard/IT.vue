@@ -32,20 +32,20 @@ const userName = computed(() => user.value?.name || 'Admin');
     <Head title="Dashboard Admin" />
 
     <AuthenticatedLayout>
-        <!-- Header Halaman (dimasukkan ke slot 'header' di AuthenticatedLayout) -->
+        <!-- Header Halaman -->
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 Dashboard Admin IT
             </h2>
         </template>
         
-        <!-- Konten Utama (dimasukkan ke slot default di AuthenticatedLayout) -->
+        <!-- Konten Utama -->
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 md:p-8 space-y-8">
                         
-                        <!-- Bagian Welcome Message -->
+                        <!-- Welcome Message -->
                         <section>
                             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
                                 Selamat Datang, {{ userName }}!
@@ -55,7 +55,7 @@ const userName = computed(() => user.value?.name || 'Admin');
                             </p>
                         </section>
 
-                        <!-- Bagian Statistik Sistem -->
+                        <!-- Statistik Sistem -->
                         <section>
                             <h3 class="flex items-center mb-4 text-xl font-semibold text-gray-700 dark:text-gray-300">
                                 <ServerIcon class="w-6 h-6 mr-3" />
@@ -64,15 +64,18 @@ const userName = computed(() => user.value?.name || 'Admin');
                             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                                 <StatCard label="Total Pengguna" :value="stats.total_pengguna" color="text-blue-500" />
                                 <StatCard label="Siswa" :value="stats.total_siswa" color="text-green-500" />
-                                <StatCard label="Guru & BK" :value="stats.total_guru" color="text-yellow-500" />
+                                <!-- PERBAIKAN: Menggunakan 'total_guru_bk' -->
+                                <StatCard label="Guru & BK" :value="stats.total_guru_bk" color="text-yellow-500" />
                                 <StatCard label="Jurusan" :value="stats.total_jurusan" color="text-indigo-500" />
                                 <StatCard label="Kelas" :value="stats.total_kelas" color="text-sky-500" />
-                                <StatCard label="Jadwal Pelajaran" :value="stats.total_jadwal" color="text-rose-500" />
-                                <StatCard label="Zona Aktif" :value="stats.zona_aktif" color="text-purple-500" />
+                                <!-- PERBAIKAN: Menggunakan 'total_jadwal_rutin' -->
+                                <StatCard label="Jadwal Pelajaran" :value="stats.total_jadwal_rutin" color="text-rose-500" />
+                                <!-- PERBAIKAN: Menggunakan 'total_zona_aktif' -->
+                                <StatCard label="Zona Aktif" :value="stats.total_zona_aktif" color="text-purple-500" />
                             </div>
                         </section>
 
-                        <!-- Bagian Panel Manajemen -->
+                        <!-- Panel Manajemen -->
                         <section>
                             <h3 class="flex items-center mb-4 text-xl font-semibold text-gray-700 dark:text-gray-300">
                                 <Cog6ToothIcon class="w-6 h-6 mr-3" />
@@ -111,17 +114,15 @@ const userName = computed(() => user.value?.name || 'Admin');
                                     title="Manajemen Jadwal"
                                     description="Susun jadwal pelajaran per kelas."
                                     color="text-rose-500"
-                                    label="Penting"
                                 >
                                     <template #icon><CalendarDaysIcon class="w-8 h-8" /></template>
                                 </PanelLink>
 
                                 <PanelLink
-                                    :href="route('admin.laporan.absensi.index')"
+                                    :href="route('admin.laporan.absensi.index', { type: 'siswa' })"
                                     title="Laporan Absensi"
-                                    description="Lihat dan filter rekap kehadiran siswa."
+                                    description="Lihat dan filter rekap kehadiran."
                                     color="text-orange-500"
-                                    label="Baru"
                                 >
                                     <template #icon><DocumentChartBarIcon class="w-8 h-8" /></template>
                                 </PanelLink>
@@ -142,4 +143,3 @@ const userName = computed(() => user.value?.name || 'Admin');
         </div>
     </AuthenticatedLayout>
 </template>
-

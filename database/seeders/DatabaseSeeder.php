@@ -2,39 +2,34 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
+     *
+     * This method defines the execution order of all seeders.
+     * The order is crucial to prevent foreign key constraint errors.
      */
     public function run(): void
     {
         $this->call([
-            // 1. Buat Roles & Permissions terlebih dahulu
+            // 1. Buat Peran & Izin terlebih dahulu
             RolePermissionSeeder::class,
-
-            // 2. Buat data master seperti Jurusan
+            
+            // 2. Buat Jurusan
             JurusanSeeder::class,
-            KelasSeeder::class,
-
-            // 3. Baru buat User setelah Roles & Jurusan ada
+            
+            // 3. Buat Pengguna (termasuk guru dengan subject_taught & siswa)
+            // UserSeeder memerlukan Jurusan untuk membuat data siswa terkait.
             UserSeeder::class,
-
-            // 4. Seeder lain yang bergantung pada User dan Kelas
-            // Pastikan Anda sudah membuat file WaliKelasSeeder.php
-            // WaliKelasSeeder::class,
+            
+            // 4. Buat Kelas (memerlukan Jurusan & Guru)
+            KelasSeeder::class,
+            
+            // 5. Buat Jadwal (memerlukan Kelas & Guru)
             JadwalSeeder::class,
-            AbsensiSeeder::class,
         ]);
-
-
-        // User dummy tambahan (jika diperlukan untuk testing)
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
     }
 }

@@ -20,14 +20,25 @@ use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
     /**
-     * Menampilkan halaman daftar semua pengguna dengan paginasi.
+     * Menampilkan halaman daftar semua pengguna dengan paginasi dan filter peran.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $users = User::query()
+        $query = User::query()
             ->with('roles:id,name') // Eager load hanya kolom id dan name dari relasi roles
-            ->orderBy('name')
-            ->paginate(10)
+            ->orderBy('name');
+
+        // Ambil filter peran dari request
+        $filterRole = $request->input('role');
+
+        // Jika ada filter peran, terapkan pada query
+        if ($filterRole && $filterRole !== 'all') { // 'all' akan menjadi opsi default untuk tidak ada filter
+            $query->whereHas('roles', function ($q) use ($filterRole) {
+                $q->where('name', $filterRole);
+            });
+        }
+
+        $users = $query->paginate(10)
             ->withQueryString()
             ->through(fn ($user) => [
                 'id' => $user->id,
@@ -38,8 +49,14 @@ class UserController extends Controller
                 'created_at' => $user->created_at,
             ]);
 
+        // Ambil semua peran untuk filter dropdown di frontend
+        $roles = Role::orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
+            'roles' => $roles, // Kirim daftar peran ke frontend
+            'currentRole' => $filterRole, // Kirim peran yang sedang difilter
+            // 'flash' prop akan otomatis tersedia jika Anda mengaturnya di middleware HandleInertiaRequests
         ]);
     }
 

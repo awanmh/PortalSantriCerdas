@@ -20,7 +20,7 @@ class JadwalController extends Controller
     public function index(): Response
     {
         // Ambil semua jadwal dengan relasi kelas dan guru
-        // Urutkan berdasarkan hari (Senin–Minggu) dan jam_mulai
+        // Urutkan berdasarkan hari (Senin–Minggu) dan jam_mulai, serta tanggal untuk acara
         $jadwals = Jadwal::with(['kelas.jurusan', 'guru'])
             ->orderByRaw("
                 CASE hari
@@ -31,9 +31,10 @@ class JadwalController extends Controller
                     WHEN 'Jumat' THEN 5
                     WHEN 'Sabtu' THEN 6
                     WHEN 'Minggu' THEN 7
-                    ELSE 8
+                    ELSE 8 -- Untuk jadwal tanpa hari (misal, acara berdasarkan tanggal) agar berada di akhir daftar hari
                 END
             ")
+            ->orderBy('tanggal', 'asc') // Tambahkan sorting by tanggal untuk acara atau jika hari null
             ->orderBy('jam_mulai', 'asc')
             ->get();
 

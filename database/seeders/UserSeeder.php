@@ -2,99 +2,104 @@
 
 namespace Database\Seeders;
 
-use App\Models\Jurusan;
 use App\Models\User;
+use App\Models\Siswa;
+use App\Models\Jurusan;
+use App\Models\Kelas; // Tambahkan ini
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
     /**
-     * Jalankan seeder untuk membuat user awal.
+     * Jalankan seeder untuk membuat data pengguna awal.
      */
     public function run(): void
     {
-        // Mendefinisikan domain email sekolah untuk konsistensi
-        $schoolDomain = 'smkalikhlash.sch.id';
+        DB::transaction(function () {
+            $schoolDomain = 'smkalikhlash.sch.id';
 
-        // Menggunakan transaction untuk memastikan semua data berhasil dibuat atau tidak sama sekali
-        DB::transaction(function () use ($schoolDomain) {
-
-            // ===== Admin IT (super admin) =====
-            $admin = User::firstOrCreate(
+            // ===== Admin IT =====
+            $admin = User::updateOrCreate(
                 ['email' => 'admin@' . $schoolDomain],
                 [
                     'name' => 'Admin IT',
                     'password' => Hash::make('password'),
+                    'subject_taught' => null,
                 ]
             );
             $admin->assignRole('it');
 
+            // ===== Guru Dummy dengan Mata Pelajaran Spesifik =====
+            $guruData = [
+                ['name' => 'Budi Santoso', 'email' => 'guru.matematika@' . $schoolDomain, 'subject_taught' => 'Matematika Wajib'],
+                ['name' => 'Citra Dewi', 'email' => 'guru.ipa@' . $schoolDomain, 'subject_taught' => 'Ilmu Pengetahuan Alam'],
+                ['name' => 'Eko Prasetyo', 'email' => 'guru.bindo@' . $schoolDomain, 'subject_taught' => 'Bahasa Indonesia'],
+                ['name' => 'Fahri Ramadhan', 'email' => 'guru.bing@' . $schoolDomain, 'subject_taught' => 'Bahasa Inggris'],
+                ['name' => 'Gita Permata', 'email' => 'guru.ddg@' . $schoolDomain, 'subject_taught' => 'Dasar Desain Grafis'],
+            ];
 
-            // ===== Guru =====
-            $guru1 = User::firstOrCreate(
-                ['email' => 'guru.matematika@' . $schoolDomain],
-                [
-                    'name' => 'Guru Matematika',
-                    'password' => Hash::make('password'),
-                ]
-            );
-            $guru1->assignRole('guru');
-
-            $guru2 = User::firstOrCreate(
-                ['email' => 'guru.ipa@' . $schoolDomain],
-                [
-                    'name' => 'Pengajar IPA',
-                    'password' => Hash::make('password'),
-                ]
-            );
-            $guru2->assignRole('guru');
-
+            foreach ($guruData as $data) {
+                $guru = User::updateOrCreate(
+                    ['email' => $data['email']],
+                    [
+                        'name' => $data['name'],
+                        'password' => Hash::make('password'),
+                        'subject_taught' => $data['subject_taught'],
+                    ]
+                );
+                $guru->assignRole('guru');
+            }
 
             // ===== BK =====
-            $bk1 = User::firstOrCreate(
+            $bk = User::updateOrCreate(
                 ['email' => 'bk.utama@' . $schoolDomain],
                 [
                     'name' => 'BK Utama',
                     'password' => Hash::make('password'),
+                    'subject_taught' => null,
                 ]
             );
-            $bk1->assignRole('bk');
+            $bk->assignRole('bk');
 
+            // ===== Siswa Dummy =====
+            if (Jurusan::count() > 0 && Kelas::count() > 0) {
+                $jurusanIds = Jurusan::pluck('id');
+                $kelasIds = Kelas::pluck('id'); // Ambil semua ID kelas yang ada
+                $angkatans = ['2022', '2023', '2024'];
 
-            // ===== Siswa (otomatis 5 akun dummy dengan data siswa terkait) =====
-            $jurusanIds = Jurusan::pluck('id'); // Ambil semua ID jurusan yang ada
-            $angkatans = ['2022', '2023', '2024']; // Contoh tahun angkatan
+                for ($i = 1; $i <= 30; $i++) {
+                    $userSiswa = User::firstOrCreate(
+                        ['email' => "siswa{$i}@" . $schoolDomain],
+                        [
+                            'name' => "Siswa Dummy {$i}",
+                            'password' => Hash::make('password')
+                        ]
+                    );
+                    $userSiswa->assignRole('siswa');
 
-            if ($jurusanIds->isEmpty()) {
-                // Jika tidak ada jurusan, hentikan seeder siswa untuk menghindari error.
-                // Pastikan JurusanSeeder berjalan sebelum UserSeeder.
-                return;
-            }
-
-            for ($i = 1; $i <= 5; $i++) {
-                $userSiswa = User::firstOrCreate(
-                    ['email' => "siswa{$i}@" . $schoolDomain],
-                    [
-                        'name' => "Siswa Dummy {$i}",
-                        'password' => Hash::make('password'),
-                    ]
-                );
-
-                // Beri role 'siswa'
-                $userSiswa->assignRole('siswa');
-
-                // Buat data siswa terkait jika belum ada
-                $userSiswa->siswa()->firstOrCreate(
-                    [], // Cek berdasarkan user_id saja
-                    [
-                        'nama' => $userSiswa->name,
-                        'jurusan_id' => $jurusanIds->random(), // Pilih ID jurusan secara acak
-                        'angkatan' => $angkatans[array_rand($angkatans)], // Pilih angkatan secara acak
-                    ]
-                );
+                    // Menugaskan siswa ke kelas secara acak
+                    $userSiswa->kelas()->sync([$kelasIds->random()]);
+                    
+                    // Membuat data siswa terkait di tabel 'siswa' jika ada modelnya
+                    if (class_exists(Siswa::class)) {
+                        Siswa::firstOrCreate(
+                            ['user_id' => $userSiswa->id],
+                            [
+                                'nama' => $userSiswa->name,
+                                'jurusan_id' => $jurusanIds->random(),
+                                'angkatan' => $angkatans[array_rand($angkatans)],
+                            ]
+                        );
+                    }
+                }
+            } else {
+                $this->command->warn('⚠️ Seeder Siswa dilewati: Data Jurusan atau Kelas belum ada.');
             }
         });
+
+        $this->command->info('✅ User Seeder berhasil dijalankan!');
     }
 }

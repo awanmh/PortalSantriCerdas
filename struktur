@@ -47,10 +47,12 @@
 │   │   │   │   └── VerifyEmailController.php
 │   │   │   ├── Web/
 │   │   │   │   ├── AbsensiController.php
+│   │   │   │   ├── AbsensiSiswaController.php
 │   │   │   │   ├── DashboardController.php
 │   │   │   │   ├── JadwalController.php
 │   │   │   │   ├── JurusanController.php
 │   │   │   │   ├── KelasController.php
+│   │   │   │   ├── KelasSiswaController.php
 │   │   │   │   ├── LiveMapController.php
 │   │   │   │   ├── UserController.php
 │   │   │   │   └── ZonaController.php
@@ -70,6 +72,7 @@
 │   │   │   │   └── LoginRequests.php
 │   │   │   ├── AbsensiGuruRequest.php
 │   │   │   ├── AbsensiSiswaRequest.php
+│   │   │   ├── AssignSiswaRequest.php
 │   │   │   ├── CatatanPelanggaranRequest.php
 │   │   │   ├── JadwalRequest.php
 │   │   │   ├── JurusanRequest.php
@@ -156,7 +159,9 @@
 │   │   ├── 2025_09_01_044325_create_notifications_table.php
 │   │   ├── 2025_09_12_162459_add_hours_to_zone_table.php
 │   │   ├── 2025_09_12_174934_add_role_to_users_table.php
-│   │   └── 2025_09_17_212620_add_profile_photo_path_to_users_table.php
+│   │   ├── 2025_09_17_212620_add_profile_photo_path_to_users_table.php
+│   │   ├── 2025_09_20_153005_add_location_fields_to_users_table.php
+│   │   └── 2025_09_23_062527_add_subject_taught_to_users_table.php
 │   ├── seeders/
 │   │   ├── AbsensiSeeder.php
 │   │   ├── DatabaseSeeder.php
@@ -215,7 +220,8 @@
 │   │   │   │   │   │   ├── Jadwal/
 │   │   │   │   │   │   │   └── Index.vue
 │   │   │   │   │   │   ├── Kelas/
-│   │   │   │   │   │   │   └── Index.vue
+│   │   │   │   │   │   │   ├── Index.vue
+│   │   │   │   │   │   │   └── ManageSiswa.vue
 │   │   │   │   │   │   ├── Laporan/
 │   │   │   │   │   │   │   └── Absensi.vue
 │   │   │   │   │   │   ├── Users/
@@ -235,6 +241,7 @@
 │   │   │   │   │   │   └── Index.vue
 │   │   │   │   ├── Dashboard/
 │   │   │   │   │   │   ├── BK.vue
+│   │   │   │   │   │   ├── CetakAbsensiSiswa.vue
 │   │   │   │   │   │   ├── Guru.vue
 │   │   │   │   │   │   ├── GuruMap.vue
 │   │   │   │   │   │   ├── IT.vue

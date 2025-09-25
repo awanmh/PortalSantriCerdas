@@ -189,4 +189,3 @@ onUnmounted(() => {
         </div>
     </AuthenticatedLayout>
 </template>
-

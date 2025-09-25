@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\AbsensiGuru;
-use App\Models\AbsensiSiswa; // DITAMBAHKAN
+use App\Models\AbsensiSiswa;
 use App\Models\CatatanPelanggaran;
 use App\Models\Jadwal;
 use App\Models\Jurusan;
@@ -15,9 +15,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
 
 /**
- * Mengelola tampilan dashboard berdasarkan peran pengguna.
+ * Mengelola tampilan dashboard berdasarkan peran pengguna yang sedang login.
  */
 class DashboardController extends Controller
 {
@@ -27,9 +28,10 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         /** @var \App\Models\User $user */
-        $user = $request->user()->load(['siswa', 'kelas']);
+        $user = Auth::user();
+        $user->loadMissing('roles');
 
-        $rolePriority = ['it', 'bk', 'guru', 'siswa'];
+        $rolePriority = ['it', 'admin', 'bk', 'guru', 'siswa'];
         $userRole = null;
 
         foreach ($rolePriority as $role) {
@@ -39,84 +41,87 @@ class DashboardController extends Controller
             }
         }
 
-        switch ($userRole) {
-            case 'it':
-                return $this->renderItDashboard();
-            case 'guru':
-                return $this->renderGuruDashboard($user);
-            case 'bk':
-                return $this->renderBkDashboard($user);
-            case 'siswa':
-                return $this->renderSiswaDashboard($user);
-            default:
-                return Inertia::render('Profile/Edit');
-        }
+        return match ($userRole) {
+            'it', 'admin' => $this->renderItAdminDashboard(),
+            'guru'        => $this->renderGuruDashboard($user),
+            'bk'          => $this->renderBkDashboard($user),
+            'siswa'       => $this->renderSiswaDashboard($user),
+            default       => Inertia::render('Profile/Edit'),
+        };
     }
 
     /**
-     * Merender dashboard untuk peran IT dengan statistik lengkap.
+     * Merender dashboard untuk peran IT/Admin dengan statistik sistem.
      */
-    private function renderItDashboard(): Response
+    private function renderItAdminDashboard(): Response
     {
         $stats = [
-            'total_pengguna' => User::count(),
-            'total_siswa'    => User::role('siswa')->count(),
-            'total_guru'     => User::role(['guru', 'bk'])->count(),
-            'zona_aktif'     => Zona::count(),
-            'total_jurusan'  => Jurusan::count(),
-            'total_kelas'    => Kelas::count(),
-            'total_jadwal'   => Jadwal::where('tipe', 'pelajaran')->count(),
+            'total_pengguna'    => User::count(),
+            'total_siswa'       => User::role('siswa')->count(),
+            'total_guru_bk'     => User::role(['guru', 'bk'])->count(),
+            'total_jurusan'     => Jurusan::count(),
+            'total_kelas'       => Kelas::count(),
+            'total_jadwal_rutin' => Jadwal::where('tipe', 'pelajaran')->count(),
+            'total_zona_aktif'  => Zona::count(),
         ];
 
-        return Inertia::render('Dashboard/IT', ['stats' => $stats]);
+        return Inertia::render('Dashboard/IT', [
+            'stats' => $stats,
+        ]);
     }
 
     /**
      * Merender dashboard untuk peran Guru.
-     * --- LOGIKA DIPERBARUI UNTUK MENAMBAHKAN REKAP SISWA ---
      */
     private function renderGuruDashboard(User $user): Response
     {
         $today = Carbon::today()->toDateString();
+        $dayOfWeek = Carbon::today()->isoFormat('dddd');
 
-        $absensiHariIni = AbsensiGuru::where('guru_id', $user->id)
+        $absensiGuruHariIni = AbsensiGuru::where('guru_id', $user->id)
             ->whereDate('tanggal', $today)
             ->first();
 
+        $guruMataPelajaran = $user->subject_taught;
+
         $jadwalMengajarHariIni = Jadwal::where('guru_id', $user->id)
-            ->where('tanggal', $today)
-            ->with('kelas.jurusan')
+            ->where(function ($query) use ($today, $dayOfWeek) {
+                $query->where('hari', $dayOfWeek)->orWhere('tanggal', $today);
+            })
+            ->when($guruMataPelajaran, function ($query, $subject) {
+                $query->where('mata_pelajaran', $subject);
+            })
+            ->with('kelas:id,nama_kelas')
             ->orderBy('jam_mulai')
             ->get();
 
-        // --- LOGIKA BARU: MENGAMBIL REKAP ABSENSI SISWA ---
-        $rekapSiswa = [];
-        $jadwalIds = $jadwalMengajarHariIni->pluck('id');
+        $rekapSiswa = ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alfa' => 0];
+        $jadwalIdsHariIni = $jadwalMengajarHariIni->pluck('id')->toArray();
 
-        if ($jadwalIds->isNotEmpty()) {
-            // Hitung status absensi siswa untuk jadwal-jadwal tersebut.
-            $absensiSiswa = AbsensiSiswa::whereIn('jadwal_id', $jadwalIds)
+        if (!empty($jadwalIdsHariIni)) {
+            $absensiSiswaRekap = AbsensiSiswa::whereIn('jadwal_id', $jadwalIdsHariIni)
+                ->whereDate('waktu_absensi', $today)
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
                 ->pluck('total', 'status');
 
             $rekapSiswa = [
-                'hadir' => $absensiSiswa->get('hadir', 0),
-                'izin' => $absensiSiswa->get('izin', 0),
-                'sakit' => $absensiSiswa->get('sakit', 0),
-                'alfa' => $absensiSiswa->get('alfa', 0),
+                'hadir' => $absensiSiswaRekap->get('hadir', 0),
+                'izin'  => $absensiSiswaRekap->get('izin', 0),
+                'sakit' => $absensiSiswaRekap->get('sakit', 0),
+                'alfa'  => $absensiSiswaRekap->get('alfa', 0),
             ];
         }
 
         return Inertia::render('Dashboard/Guru', [
             'dashboardData' => [
-                'absensi_hari_ini' => $absensiHariIni,
+                'absensi_hari_ini' => $absensiGuruHariIni,
                 'jadwal_mengajar' => $jadwalMengajarHariIni,
-                'rekap_siswa' => $rekapSiswa, // <-- DATA BARU DIKIRIM KE FRONTEND
+                'rekap_siswa' => $rekapSiswa,
             ],
         ]);
     }
-    
+
     /**
      * Merender dashboard untuk peran BK.
      */
@@ -126,14 +131,9 @@ class DashboardController extends Controller
             'pelanggaran_hari_ini' => CatatanPelanggaran::whereDate('tanggal', today())->count(),
             'total_poin_hari_ini' => CatatanPelanggaran::whereDate('tanggal', today())->sum('poin'),
         ];
-
-        $pelanggaranTerbaru = CatatanPelanggaran::with(['siswa:id,name', 'pelapor:id,name'])
-            ->latest()
-            ->limit(5)
-            ->get();
-
+        $pelanggaranTerbaru = CatatanPelanggaran::with(['siswa:id,name', 'pelapor:id,name'])->latest()->limit(5)->get();
         $siswaBermasalah = User::role('siswa')
-            ->whereHas('catatanPelanggaran') 
+            ->whereHas('catatanPelanggaran')
             ->withSum('catatanPelanggaran as total_poin', 'poin')
             ->orderByDesc('total_poin')
             ->limit(5)
@@ -151,12 +151,17 @@ class DashboardController extends Controller
      */
     private function renderSiswaDashboard(User $user): Response
     {
-        $jadwalHariIni = [];
+        $user->loadMissing('kelas.jurusan');
         $kelasSiswa = $user->kelas->first();
+        $jadwalHariIni = collect();
 
         if ($kelasSiswa) {
+            $today = Carbon::today()->toDateString();
+            $dayOfWeek = Carbon::today()->isoFormat('dddd');
             $jadwalHariIni = Jadwal::where('kelas_id', $kelasSiswa->id)
-                ->where('tanggal', Carbon::today()->toDateString())
+                ->where(function ($query) use ($today, $dayOfWeek) {
+                    $query->where('hari', $dayOfWeek)->orWhere('tanggal', $today);
+                })
                 ->with('guru:id,name')
                 ->orderBy('jam_mulai', 'asc')
                 ->get();
@@ -168,3 +173,4 @@ class DashboardController extends Controller
         ]);
     }
 }
+

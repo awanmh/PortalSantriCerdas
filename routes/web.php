@@ -3,16 +3,24 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\ProfileController;
+
+// --- Controller untuk Role Siswa ---
 use App\Http\Controllers\Web\AbsensiController;
-use App\Http\Controllers\Web\CatatanPelanggaranController;
+
+// --- Controller untuk Role Guru, BK, IT ---
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\CatatanPelanggaranController;
+use App\Http\Controllers\Web\LaporanAbsensiController;
+use App\Http\Controllers\Web\LiveMapController;
+use App\Http\Controllers\Web\AbsensiSiswaController;
+
+// --- Controller Khusus Admin/IT ---
 use App\Http\Controllers\Web\JurusanController;
 use App\Http\Controllers\Web\KelasController;
 use App\Http\Controllers\Web\JadwalController;
-use App\Http\Controllers\Web\LaporanAbsensiController;
-use App\Http\Controllers\Web\LiveMapController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\ZonaController;
+use App\Http\Controllers\Web\KelasSiswaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,12 +57,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [AbsensiController::class, 'store'])->name('store');
     });
 
-    // --- RUTE LAPORAN ABSENSI UNTUK GURU & BK ---
-    Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'index'])
+    // --- RUTE LAPORAN ABSENSI (Hanya untuk BK) ---
+    // URL: /laporan/absensi
+    Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'adminIndex'])
         ->name('laporan.absensi.index')
-        ->middleware('role:guru|bk|it'); // PERBAIKAN: Tambahkan role it agar bisa diakses juga
+        ->middleware('role:bk'); // Hanya untuk BK, tidak ada prefix 'admin'
 
-    // --- RUTE UMUM UNTUK GURU & BK (Non-Admin) ---
+
+    // --- RUTE CETAK ABSENSI SISWA (Hanya untuk Guru) ---
+    Route::prefix('guru/absensi-siswa')->name('guru.absensi.siswa.')->middleware('role:guru')->group(function () {
+        Route::get('/', [AbsensiSiswaController::class, 'index'])->name('index');
+        // --- PERBAIKAN DI SINI ---
+        Route::get('/data-kelas/{jadwal}', [AbsensiSiswaController::class, 'getDataForAbsensi'])->name('data');
+        Route::post('/store', [AbsensiSiswaController::class, 'store'])->name('store');
+    });
+
+    // --- RUTE UMUM UNTUK GURU, BK, & IT ---
     Route::resource('catatan-pelanggaran', CatatanPelanggaranController::class)
         ->except(['show'])
         ->middleware('role:guru|bk|it');
@@ -70,11 +88,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('jurusan', JurusanController::class)->except(['show', 'create', 'edit'])->middleware('can:manage jurusan');
         Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->middleware('can:manage kelas');
         Route::resource('jadwal', JadwalController::class)->except(['show', 'create', 'edit'])->middleware('can:manage jadwal');
-        
-        // --- RUTE LAPORAN ABSENSI ADMIN (VERSI KHUSUS ADMIN) ---
+
+        // --- RUTE UNTUK MENGELOLA SISWA DI DALAM KELAS ---
+        Route::prefix('kelas/{kelas}')->name('kelas.')->group(function () {
+            Route::get('/manage-siswa', [KelasSiswaController::class, 'index'])->name('manage-siswa');
+            Route::post('/assign-siswa', [KelasSiswaController::class, 'assign'])->name('assign-siswa');
+            Route::delete('/detach-siswa/{siswa}', [KelasSiswaController::class, 'detach'])->name('detach-siswa');
+        });
+
+        // --- RUTE LAPORAN ABSENSI ADMIN/IT ---
+        // URL: /admin/laporan/absensi
         Route::get('/laporan/absensi', [LaporanAbsensiController::class, 'adminIndex'])
-            ->name('laporan.absensi.index') // Nama rute yang berbeda
-            ->middleware('can:view laporan absensi');
+            ->name('laporan.absensi.index') // Nama lengkapnya: 'admin.laporan.absensi.index'
+            ->middleware('can:view laporan absensi'); // Hanya untuk IT
     });
 });
 

@@ -5,58 +5,51 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Carbon\Carbon;
 
 class Jadwal extends Model
 {
     use HasFactory;
 
-    /**
-     * Nama tabel yang terhubung dengan model ini.
-     *
-     * @var string
-     */
     protected $table = 'jadwal';
 
-    /**
-     * Atribut yang dapat diisi secara massal.
-     * Disesuaikan dengan file migrasi terbaru.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-    'mata_pelajaran',
-    'deskripsi',
-    'hari',
-    'jam_mulai',
-    'jam_selesai',
-    'tipe',
-    'kelas_id',
-    'guru_id',
-];
+        'mata_pelajaran', 'deskripsi', 'hari', 'tanggal',
+        'jam_mulai', 'jam_selesai', 'tipe', 'kelas_id', 'guru_id',
+    ];
 
-protected $casts = [
-    'jam_mulai' => 'datetime:H:i',
-    'jam_selesai' => 'datetime:H:i',
-];
+    protected $casts = [
+        'tanggal' => 'date',
+        'jam_mulai' => 'datetime:H:i',
+        'jam_selesai' => 'datetime:H:i',
+    ];
 
-
-    /**
-     * Mendefinisikan relasi ke model Kelas.
-     * Satu jadwal hanya dimiliki oleh satu kelas.
-     */
     public function kelas(): BelongsTo
     {
         return $this->belongsTo(Kelas::class);
     }
 
-    /**
-     * Mendefinisikan relasi ke model User (sebagai Guru).
-     * Satu jadwal hanya diajar oleh satu guru.
-     * Kita perlu mendefinisikan foreign key 'guru_id' secara eksplisit.
-     */
     public function guru(): BelongsTo
     {
         return $this->belongsTo(User::class, 'guru_id');
     }
-}
 
+    /**
+     * Scope untuk mengambil jadwal hari ini (menggabungkan jadwal rutin dan insidental).
+     */
+    public function scopeToday($query)
+    {
+        $todayDate = Carbon::today()->toDateString();
+        $todayDay = Carbon::today()->isoFormat('dddd'); // Misal: "Rabu"
+
+        return $query->where(function ($q) use ($todayDate, $todayDay) {
+            // Kondisi 1: Jadwal rutin (punya 'hari', tipe 'pelajaran', dan tidak punya 'tanggal' spesifik)
+            $q->where('hari', $todayDay)
+              ->where('tipe', 'pelajaran')
+              ->whereNull('tanggal');
+
+            // ATAU Kondisi 2: Jadwal insidental (punya 'tanggal' spesifik, tidak peduli harinya)
+            $q->orWhere('tanggal', $todayDate);
+        });
+    }
+}

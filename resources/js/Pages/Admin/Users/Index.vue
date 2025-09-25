@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
@@ -23,7 +23,26 @@ const props = defineProps({
     flash: {
         type: Object,
         default: () => ({}),
-    }
+    },
+    // PROPS BARU UNTUK FILTER
+    roles: { // Daftar semua peran dari backend
+        type: Array,
+        required: true,
+    },
+    currentRole: { // Peran yang sedang aktif difilter
+        type: String,
+        default: 'all', // Default 'all' jika tidak ada filter
+    },
+});
+
+// State lokal untuk filter peran yang dipilih
+const selectedRole = ref(props.currentRole);
+
+/**
+ * Mengamati perubahan pada `selectedRole` dan memicu filter.
+ */
+watch(selectedRole, (newRole) => {
+    router.get(route('admin.users.index', { role: newRole }), {}, { preserveState: true, replace: true });
 });
 
 /**
@@ -69,33 +88,39 @@ const roleColor = computed(() => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                 <div>
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">Manajemen Pengguna</h2>
                     <p class="text-sm text-gray-500 mt-1">Kelola semua akun yang terdaftar di dalam sistem.</p>
                 </div>
-                <Link :href="route('admin.users.create')">
-                    <PrimaryButton class="mt-4 sm:mt-0 w-full sm:w-auto">
+                <Link :href="route('admin.users.create')" class="mt-4 sm:mt-0">
+                    <PrimaryButton>
                         <UserPlusIcon class="h-5 w-5 mr-2" />
                         Tambah Pengguna
                     </PrimaryButton>
                 </Link>
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <select v-model="selectedRole" class="block w-full sm:w-auto rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    <option value="all">Semua Peran</option>
+                    <option v-for="role in roles" :key="role.id" :value="role.name">
+                        {{ role.name }}
+                    </option>
+                </select>
             </div>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-                <!-- Notifikasi Flash Message (FIXED) -->
                 <Transition enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" class="transition-all duration-300 ease-out">
-                    <!-- DIUBAH: Menggunakan optional chaining (?.) untuk keamanan -->
                     <div v-if="flash?.success" class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-800 px-4 py-3 rounded-lg relative flex items-center shadow-md" role="alert">
                         <CheckCircleIcon class="h-6 w-6 mr-3"/>
                         <span class="block sm:inline font-medium">{{ flash.success }}</span>
                     </div>
                 </Transition>
-                 <Transition enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" class="transition-all duration-300 ease-out">
-                     <!-- DIUBAH: Menggunakan optional chaining (?.) untuk keamanan -->
+                <Transition enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" class="transition-all duration-300 ease-out">
                     <div v-if="flash?.error" class="mb-6 bg-red-100 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-lg relative flex items-center shadow-md" role="alert">
                         <ExclamationTriangleIcon class="h-6 w-6 mr-3"/>
                         <span class="block sm:inline font-medium">{{ flash.error }}</span>
@@ -150,10 +175,9 @@ const roleColor = computed(() => {
                             </tbody>
                         </table>
                     </div>
-                      <!-- Paginasi -->
-                     <div v-if="users.links.length > 3" class="p-4 border-t border-gray-200 bg-gray-50">
-                         <Pagination :links="users.links" />
-                     </div>
+                    <div v-if="users.links.length > 3" class="p-4 border-t border-gray-200 bg-gray-50">
+                        <Pagination :links="users.links" />
+                    </div>
                 </div>
             </div>
         </div>

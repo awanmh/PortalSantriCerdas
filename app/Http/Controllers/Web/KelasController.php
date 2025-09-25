@@ -12,34 +12,39 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Controller untuk mengelola data master Kelas.
+ * Controller for managing Kelas (Classes) data.
  */
 class KelasController extends Controller
 {
     /**
-     * Menampilkan halaman daftar semua kelas.
-     * Form untuk menambah/mengedit juga ada di sini, jadi kita kirim data yang diperlukan.
+     * Display a listing of the classes.
+     * Includes data for adding/editing classes.
+     *
+     * @return Response
      */
     public function index(): Response
     {
         return Inertia::render('Admin/Kelas/Index', [
-            // Data utama: daftar semua kelas, diurutkan berdasarkan NAMA_KELAS yang benar
+            // Retrieve all classes with their related jurusan and waliKelas, ordered by class name.
             'kelas' => Kelas::with(['jurusan', 'waliKelas'])->orderBy('nama_kelas')->get(),
 
-            // Data pendukung untuk form: daftar semua jurusan
-            'jurusan' => Jurusan::orderBy('nama')->get(['id', 'nama']),
+            // Retrieve all jurusans, ordered by name. Menghapus 'nama_singkat'
+            'jurusan' => Jurusan::orderBy('nama')->get(['id', 'nama']), 
             
-            // Data pendukung untuk form: daftar semua guru
+            // Retrieve all users with 'guru' role, ordered by name, for wali kelas selection.
             'guru' => User::role('guru')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /**
-     * Menyimpan data kelas baru ke dalam database.
+     * Store a newly created class in storage.
+     *
+     * @param  KelasRequest  $request
+     * @return RedirectResponse
      */
     public function store(KelasRequest $request): RedirectResponse
     {
-        // Validasi sudah otomatis dijalankan oleh KelasRequest.
+        // Validation is handled automatically by KelasRequest.
         Kelas::create($request->validated());
 
         return redirect()->route('admin.kelas.index')
@@ -47,33 +52,38 @@ class KelasController extends Controller
     }
 
     /**
-     * Memperbarui data kelas yang ada di database.
-     * Variabel $kelas diikat secara otomatis dari database berkat Route Model Binding.
+     * Update the specified class in storage.
+     *
+     * @param  KelasRequest  $request
+     * @param  Kelas  $kelas  The class instance to update via Route Model Binding.
+     * @return RedirectResponse
      */
-    public function update(KelasRequest $request, Kelas $kela): RedirectResponse
+    public function update(KelasRequest $request, Kelas $kelas): RedirectResponse
     {
-        $kela->update($request->validated());
+        $kelas->update($request->validated());
 
         return redirect()->route('admin.kelas.index')
             ->with('success', 'Data kelas berhasil diperbarui.');
     }
 
     /**
-     * Menghapus data kelas dari database.
+     * Remove the specified class from storage.
+     *
+     * @param  Kelas  $kelas  The class instance to delete via Route Model Binding.
+     * @return RedirectResponse
      */
-    public function destroy(Kelas $kela): RedirectResponse
+    public function destroy(Kelas $kelas): RedirectResponse
     {
         // Pengecekan integritas data: jangan hapus kelas jika masih ada siswa di dalamnya.
-        // Catatan: Ini memerlukan relasi `siswa()` di model `Kelas` agar berfungsi.
-        if ($kela->siswa()->exists()) {
+        // Sekarang menggunakan relasi `users()` (siswa) yang merupakan BelongsToMany.
+        if ($kelas->users()->exists()) { // Menggunakan relasi `users` yang baru
             return redirect()->route('admin.kelas.index')
                 ->with('error', 'Kelas tidak dapat dihapus karena masih memiliki siswa.');
         }
 
-        $kela->delete();
+        $kelas->delete();
 
         return redirect()->route('admin.kelas.index')
             ->with('success', 'Kelas berhasil dihapus.');
     }
 }
-

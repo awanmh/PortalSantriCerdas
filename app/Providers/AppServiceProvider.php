@@ -4,13 +4,12 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
-     *
-     * Use this method to bind services into the container.
      */
     public function register(): void
     {
@@ -19,13 +18,15 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
-     *
-     * This method is called after all other services have been registered,
-     * ideal for performing actions during app booting, like prefetching assets.
      */
     public function boot(): void
     {
-        // Prefetch Vite assets to improve page load performance
-        Vite::prefetch(concurrency: 3);
+        // Prefetch Vite assets (hanya tersedia di Laravel 11+)
+        if (method_exists(Vite::class, 'prefetch')) {
+            Vite::prefetch(concurrency: 3);
+        }
+
+        // Set locale Carbon secara global
+        Carbon::setLocale('id');
     }
 }

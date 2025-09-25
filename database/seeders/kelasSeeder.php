@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Kelas;
 use App\Models\Jurusan;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class KelasSeeder extends Seeder
 {
@@ -15,39 +17,43 @@ class KelasSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Pengecekan Keamanan: Pastikan Jurusan sudah ada.
-        $jurusans = Jurusan::all();
-        if ($jurusans->count() < 2) {
-            $this->command->error('Tabel Jurusan harus memiliki setidaknya 2 data. Silakan periksa JurusanSeeder Anda.');
-            return;
-        }
+        DB::transaction(function () {
+            // Memastikan data Jurusan dan Guru sudah ada sebelum membuat Kelas
+            $jurusans = Jurusan::all();
+            if ($jurusans->isEmpty()) {
+                $this->command->warn('⚠️ Seeder Kelas gagal: Data Jurusan belum ada. Jalankan JurusanSeeder terlebih dahulu.');
+                return;
+            }
+            
+            $gurus = User::role('guru')->get();
+            if ($gurus->isEmpty()) {
+                $this->command->warn('⚠️ Seeder Kelas gagal: Tidak ada user dengan role guru.');
+                return;
+            }
 
-        // 2. Hapus data lama untuk menghindari duplikasi
-        Kelas::truncate();
+            // Menghapus data kelas lama untuk menghindari duplikasi
+            Kelas::truncate();
 
-        // 3. Ambil DUA data Jurusan pertama yang tersedia, apapun namanya.
-        $jurusanSatu = $jurusans->get(0);
-        $jurusanDua = $jurusans->get(1);
+            $jenjang = ['X', 'XI', 'XII'];
+            $nomorUrutKelas = ['1', '2']; // Membuat 2 kelas paralel untuk setiap jenjang/jurusan
 
-        // 4. Definisikan data kelas dalam sebuah array agar lebih bersih
-        $kelasData = [
-            // Kelas untuk Jurusan Pertama
-            ['nama_kelas' => 'X ' . $jurusanSatu->nama_singkat . ' 1', 'jenjang' => 'X', 'jurusan_id' => $jurusanSatu->id],
-            ['nama_kelas' => 'XI ' . $jurusanSatu->nama_singkat . ' 1', 'jenjang' => 'XI', 'jurusan_id' => $jurusanSatu->id],
-            ['nama_kelas' => 'XII ' . $jurusanSatu->nama_singkat . ' 1', 'jenjang' => 'XII', 'jurusan_id' => $jurusanSatu->id],
+            foreach ($jenjang as $j) {
+                foreach ($jurusans as $jurusan) {
+                    foreach ($nomorUrutKelas as $nomor) {
+                        Kelas::create([
+                            // Menggunakan nama_singkat dari Jurusan untuk nama kelas yang rapi
+                            'nama_kelas' => "{$j} {$jurusan->nama_singkat} {$nomor}",
+                            'jenjang' => $j,
+                            'jurusan_id' => $jurusan->id,
+                            // Menugaskan Wali Kelas secara acak dari daftar guru yang ada
+                            'wali_kelas_id' => $gurus->random()->id,
+                        ]);
+                    }
+                }
+            }
+        });
 
-            // Kelas untuk Jurusan Kedua
-            ['nama_kelas' => 'X ' . $jurusanDua->nama_singkat . ' 1', 'jenjang' => 'X', 'jurusan_id' => $jurusanDua->id],
-            ['nama_kelas' => 'XI ' . $jurusanDua->nama_singkat . ' 1', 'jenjang' => 'XI', 'jurusan_id' => $jurusanDua->id],
-            ['nama_kelas' => 'XII ' . $jurusanDua->nama_singkat . ' 1', 'jenjang' => 'XII', 'jurusan_id' => $jurusanDua->id],
-        ];
-
-        // 5. Looping untuk membuat data kelas
-        foreach ($kelasData as $data) {
-            Kelas::create($data);
-        }
-        
-        $this->command->info('Seeder Kelas berhasil dijalankan.');
+        $this->command->info('✅ Kelas Seeder berhasil dijalankan!');
     }
 }
 

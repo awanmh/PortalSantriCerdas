@@ -27,7 +27,7 @@ class Jadwal extends Model
 
     protected $casts = [
         'tanggal'     => 'date',
-        'jam_mulai'   => 'datetime:H:i',
+        'jam_mulai'   => 'datetime:H:i',   // simpan sebagai time di DB, cast ke Carbon instance
         'jam_selesai' => 'datetime:H:i',
     ];
 
@@ -36,7 +36,7 @@ class Jadwal extends Model
      */
     public function kelas(): BelongsTo
     {
-        return $this->belongsTo(Kelas::class);
+        return $this->belongsTo(Kelas::class, 'kelas_id', 'id');
     }
 
     /**
@@ -44,15 +44,16 @@ class Jadwal extends Model
      */
     public function guru(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(User::class, 'guru_id', 'id');
     }
 
     /**
      * Relasi ke mata pelajaran.
+     * Penting: gunakan foreign key 'mata_pelajaran_id'
      */
     public function mataPelajaran(): BelongsTo
     {
-        return $this->belongsTo(MataPelajaran::class, 'mata_pelajaran_id');
+        return $this->belongsTo(MataPelajaran::class, 'mata_pelajaran_id', 'id');
     }
 
     /**
@@ -62,16 +63,20 @@ class Jadwal extends Model
     public function scopeToday($query)
     {
         $todayDate = Carbon::today()->toDateString();
-        $todayDay  = Carbon::today()->isoFormat('dddd'); // contoh: "Rabu"
+        $todayDay  = Carbon::today()->isoFormat('dddd'); // contoh: "Jumat"
 
         return $query->where(function ($q) use ($todayDate, $todayDay) {
             // Jadwal rutin (berdasarkan hari, tanpa tanggal spesifik)
-            $q->where('hari', $todayDay)
-              ->where('tipe', 'pelajaran')
-              ->whereNull('tanggal');
+            $q->where(function ($sub) use ($todayDay) {
+                $sub->where('hari', $todayDay)
+                    ->where('tipe', 'pelajaran')
+                    ->whereNull('tanggal');
+            });
 
             // Atau jadwal insidental (punya tanggal spesifik)
-            $q->orWhere('tanggal', $todayDate);
+            $q->orWhere(function ($sub) use ($todayDate) {
+                $sub->where('tanggal', $todayDate);
+            });
         });
     }
 }

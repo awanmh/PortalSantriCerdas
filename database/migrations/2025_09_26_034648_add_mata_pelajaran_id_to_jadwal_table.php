@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Tidak perlu menambahkan kolom mata_pelajaran_id lagi
-        // karena sudah dibuat di migrasi create_jadwal_table.
+        Schema::table('jadwal', function (Blueprint $table) {
+            // ubah kolom foreign key jadi nullable
+            $table->foreignId('mata_pelajaran_id')
+                ->nullable()
+                ->change();
+        });
     }
 
     /**
@@ -20,6 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Tidak ada yang perlu dihapus karena tidak ada perubahan di up().
+        Schema::table('jadwal', function (Blueprint $table) {
+            // balikin jadi not null
+            $table->foreignId('mata_pelajaran_id')
+                ->nullable(false)
+                ->change();
+        });
     }
 };

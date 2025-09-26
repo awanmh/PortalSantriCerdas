@@ -19,7 +19,7 @@ class MataPelajaranSeeder extends Seeder
                 'Sejarah',
                 'Bahasa Indonesia',
                 'Bahasa Inggris',
-                'Matematika',
+                'Matematika Wajib',
                 'Informatika',
                 'IPAS (Ilmu Pengetahuan Alam & Sosial)',
                 'Penjasorkes (Pendidikan Jasmani, Olahraga, dan Kesehatan)',

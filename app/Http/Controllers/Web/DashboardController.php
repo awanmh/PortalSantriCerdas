@@ -89,8 +89,11 @@ class DashboardController extends Controller
                 $query->where('hari', $dayOfWeek)->orWhere('tanggal', $today);
             })
             ->when($guruMataPelajaran, function ($query, $subject) {
-                $query->where('mata_pelajaran', $subject);
-            })
+    $query->whereHas('mataPelajaran', function ($q) use ($subject) {
+        $q->where('nama', $subject);
+    });
+})
+
             ->with('kelas:id,nama_kelas')
             ->orderBy('jam_mulai')
             ->get();

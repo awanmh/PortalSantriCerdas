@@ -9,8 +9,8 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      *
-     * This method defines the execution order of all seeders.
-     * The order is crucial to prevent foreign key constraint errors.
+     * Jalankan seeder sesuai urutan supaya tidak terjadi error
+     * foreign key constraint.
      */
     public function run(): void
     {
@@ -21,14 +21,16 @@ class DatabaseSeeder extends Seeder
             // 2. Buat Jurusan
             JurusanSeeder::class,
             
-            // 3. Buat Pengguna (termasuk guru dengan subject_taught & siswa)
-            // UserSeeder memerlukan Jurusan untuk membuat data siswa terkait.
+            // 3. Buat Pengguna (guru dengan subject_taught & siswa)
             UserSeeder::class,
             
             // 4. Buat Kelas (memerlukan Jurusan & Guru)
             KelasSeeder::class,
             
-            // 5. Buat Jadwal (memerlukan Kelas & Guru)
+            // 5. Buat Mata Pelajaran (diperlukan oleh Jadwal)
+            MataPelajaranSeeder::class,
+            
+            // 6. Buat Jadwal (memerlukan Kelas, Guru, dan Mata Pelajaran)
             JadwalSeeder::class,
         ]);
     }

@@ -55,11 +55,17 @@ class JadwalSeeder extends Seeder
                 foreach ($jamSesi as $jam) {
                     $assignedGuru = $gurus[$guruIndex];
 
-                    // Cari ID mata pelajaran berdasarkan subject_taught guru
+                    // Cari mapel sesuai subject_taught
                     $mapel = MataPelajaran::where('nama', $assignedGuru->subject_taught)->first();
+
+                    // Jika tidak ketemu, coba cari alternatif yg mirip
+                    if (!$mapel) {
+                        $mapel = MataPelajaran::where('nama', 'like', '%' . $assignedGuru->subject_taught . '%')->first();
+                    }
 
                     if (!$mapel) {
                         $this->command->warn("   > Mata pelajaran '{$assignedGuru->subject_taught}' tidak ditemukan. Lewati.");
+                        $guruIndex = ($guruIndex + 1) % $gurus->count();
                         continue;
                     }
 

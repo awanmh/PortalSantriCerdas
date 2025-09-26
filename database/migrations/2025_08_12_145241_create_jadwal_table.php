@@ -12,28 +12,38 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('jadwal', function (Blueprint $table) {
-    $table->id();
-    $table->string('mata_pelajaran');
-    $table->text('deskripsi')->nullable();
+            $table->id();
 
-    // Jadwal tetap per hari (Senin-Jumat)
-    $table->string('hari')->nullable();
+            // Relasi ke tabel mata_pelajarans
+            $table->foreignId('mata_pelajaran_id')
+                ->constrained('mata_pelajarans')
+                ->onDelete('cascade');
 
-    // Event dengan tanggal tertentu
-    $table->date('tanggal')->nullable();
+            $table->text('deskripsi')->nullable();
 
-    $table->time('jam_mulai');
-    $table->time('jam_selesai');
+            // Untuk jadwal reguler (Senin–Jumat)
+            $table->string('hari')->nullable();
 
-    $table->enum('tipe', ['pelajaran', 'acara'])->default('pelajaran');
+            // Untuk event tertentu
+            $table->date('tanggal')->nullable();
 
-    $table->foreignId('kelas_id')->nullable()->constrained('kelas')->onDelete('cascade');
-    $table->foreignId('guru_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->time('jam_mulai');
+            $table->time('jam_selesai');
 
-    $table->timestamps();
-});
+            $table->enum('tipe', ['pelajaran', 'acara'])->default('pelajaran');
 
+            $table->foreignId('kelas_id')
+                ->nullable()
+                ->constrained('kelas')
+                ->onDelete('cascade');
 
+            $table->foreignId('guru_id')
+                ->nullable()
+                ->constrained('users')
+                ->onDelete('set null');
+
+            $table->timestamps();
+        });
     }
 
     /**
@@ -44,4 +54,3 @@ return new class extends Migration
         Schema::dropIfExists('jadwal');
     }
 };
-

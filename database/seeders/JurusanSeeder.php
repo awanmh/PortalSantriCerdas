@@ -8,26 +8,22 @@ use Illuminate\Support\Facades\DB;
 
 class JurusanSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
     public function run(): void
     {
         DB::transaction(function () {
-            Jurusan::firstOrCreate(
-                ['nama' => 'Rekayasa Perangkat Lunak'],
-                ['nama_singkat' => 'RPL']
-            );
-            Jurusan::firstOrCreate(
-                ['nama' => 'Teknik Jaringan Komputer'],
-                ['nama_singkat' => 'TKJ']
-            );
-            Jurusan::firstOrCreate(
-                ['nama' => 'Multimedia'],
-                ['nama_singkat' => 'MM']
-            );
+            $jurusans = [
+                ['nama' => 'Teknik Sepeda Motor', 'nama_singkat' => 'TSM'],
+                ['nama' => 'Teknik Komputer & Jaringan', 'nama_singkat' => 'TKJ'],
+                ['nama' => 'Desain Komunikasi Visual', 'nama_singkat' => 'DKV'],
+                ['nama' => 'Akuntansi', 'nama_singkat' => 'AKT'],
+            ];
+
+            foreach ($jurusans as $j) {
+                Jurusan::firstOrCreate(
+                    ['nama_singkat' => $j['nama_singkat']],
+                    $j
+                );
+            }
         });
 
         $this->command->info('✅ Jurusan Seeder berhasil dijalankan!');

@@ -9,18 +9,17 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
+    public function up(): void
     {
-        Schema::table('jadwal', function (Blueprint $table) {
-            $table->foreignId('mata_pelajaran_id')->nullable()->constrained('mata_pelajarans')->cascadeOnDelete();
-        });
+        // Tidak perlu menambahkan kolom mata_pelajaran_id lagi
+        // karena sudah dibuat di migrasi create_jadwal_table.
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::table('jadwal', function (Blueprint $table) {
-            $table->dropColumn('mata_pelajaran_id');
-        });
+        // Tidak ada yang perlu dihapus karena tidak ada perubahan di up().
     }
-
 };

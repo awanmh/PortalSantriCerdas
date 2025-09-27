@@ -1,6 +1,7 @@
 {
   "name": "smk-monitoring-app",
   "version": "1.0.0",
+  "type":"module",
   "description": "Monitoring system for vocational school activities, including: student & teacher attendance (GPS + photo), class schedules, student violation records, and user management (Admin, Teacher, Counselor, Student).",
   "main": "index.js",
   "scripts": {

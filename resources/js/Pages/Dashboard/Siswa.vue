@@ -5,10 +5,22 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { ClockIcon, UserIcon, MapPinIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
 import http from '@/requests';
 
+// [FIXED] Memperbaiki sintaks 'defineProps' untuk mengatasi error kompilasi
 const props = defineProps({
-    jadwalHariIni: { type: Array, required: true },
-    kelasSiswa: { type: Object, default: null },
+    jadwalHariIni: {
+        type: Array,
+        required: true,
+    },
+    kelasSiswa: {
+        type: Object,
+        default: null,
+    },
+    absensiHariIni: {
+        type: Array,
+        required: true,
+    }
 });
+
 
 const page = usePage();
 const auth = computed(() => page.props.auth);
@@ -17,26 +29,37 @@ const token = computed(() => auth.value?.token);
 const flash = computed(() => page.props.flash);
 const namaKelas = computed(() => props.kelasSiswa?.nama_kelas || 'Kelas tidak ditemukan');
 
+const currentTime = ref(new Date());
+const timeInterval = ref(null);
+
+const getJadwalStatus = (jadwal) => {
+    const now = currentTime.value;
+    const today = now.toISOString().slice(0, 10);
+
+    const startTime = new Date(`${today}T${jadwal.jam_mulai}:00`);
+    const endTime = new Date(`${today}T${jadwal.jam_selesai}:00`);
+
+    let classState = 'Akan Datang';
+    let classStyle = 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
+    
+    if (now >= startTime && now <= endTime) {
+        classState = 'Sedang Berlangsung';
+        classStyle = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 animate-pulse';
+    } else if (now > endTime) {
+        classState = 'Selesai';
+        classStyle = 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
+    }
+
+    const sudahAbsen = props.absensiHariIni.includes(jadwal.id);
+    const attendanceState = sudahAbsen ? 'Sudah Absen' : 'Belum Absen';
+    const attendanceStyle = sudahAbsen ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+    
+    return { classState, classStyle, attendanceState, attendanceStyle };
+};
+
 const trackingInterval = ref(null);
 const trackingStatus = ref('Menginisialisasi...');
 const trackingColor = ref('text-gray-500');
-
-// SIMPAN TOKEN KE LOCALSTORAGE SAAT KOMPONEN DIMUAT
-onMounted(() => {
-    if (token.value) {
-        localStorage.setItem('sanctum_token', token.value);
-        console.log('[DEBUG] Token Sanctum disimpan:', token.value.substring(0, 20) + '...');
-    } else {
-        console.warn('[DEBUG] Token Sanctum tidak tersedia');
-    }
-
-    if (user.value.roles && user.value.roles.includes('siswa')) {
-        startAutomaticTracking();
-    } else {
-        trackingStatus.value = 'Error: Hanya untuk siswa';
-        trackingColor.value = 'text-red-500';
-    }
-});
 
 const startAutomaticTracking = () => {
     trackingStatus.value = 'Mencoba mendapatkan lokasi GPS...';
@@ -52,68 +75,62 @@ const sendLocationUpdate = async () => {
         clearInterval(trackingInterval.value);
         return;
     }
-
     try {
         const position = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+                enableHighAccuracy: true, timeout: 10000, maximumAge: 0
             });
         });
-
-        console.log(`[DEBUG] Lokasi didapat: Lat ${position.coords.latitude}, Lng ${position.coords.longitude}`);
-
-        // CEK TOKEN SEBELUM MENGIRIM
         const currentToken = localStorage.getItem('sanctum_token');
-        if (!currentToken) {
-            throw new Error('Token tidak tersedia');
-        }
-
+        if (!currentToken) throw new Error('Token tidak tersedia');
+        
         trackingStatus.value = `Aktif - Lokasi diperbarui pada ${new Date().toLocaleTimeString('id-ID')}`;
         trackingColor.value = 'text-green-500';
-
-        // GUNAKAN http BUKAN window.axios
-        const response = await http.post(route('api.live.lokasi.update'), {
+        
+        await http.post(route('api.live.lokasi.update'), {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
         });
-        
-        console.log('[DEBUG] Lokasi berhasil dikirim ke server:', response.data);
-
     } catch (err) {
         clearInterval(trackingInterval.value);
-
         if (err.code === 1) {
             trackingStatus.value = 'Error: Izin lokasi ditolak.';
             trackingColor.value = 'text-red-500';
-            console.error('[DEBUG] Izin lokasi ditolak');
         } else if (err.response?.status === 401) {
             trackingStatus.value = 'Error: Autentikasi gagal (401).';
             trackingColor.value = 'text-red-500';
-            console.error('[DEBUG] Error 401 - Token mungkin expired:', err.response);
-            
-            // Hapus token yang expired
             localStorage.removeItem('sanctum_token');
-            
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 3000);
-        } else if (err.message === 'Token tidak tersedia') {
-            trackingStatus.value = 'Error: Token autentikasi tidak tersedia.';
-            trackingColor.value = 'text-red-500';
-            console.error('[DEBUG] Token Sanctum tidak ditemukan');
+            setTimeout(() => { window.location.href = '/login'; }, 3000);
         } else {
             trackingStatus.value = 'Error: Gagal mengirim lokasi.';
             trackingColor.value = 'text-red-500';
-            console.error('[DEBUG] Error:', err);
         }
     }
 };
 
+onMounted(() => {
+    timeInterval.value = setInterval(() => {
+        currentTime.value = new Date();
+    }, 60000);
+
+    if (token.value) {
+        localStorage.setItem('sanctum_token', token.value);
+    }
+    if (user.value.roles && user.value.roles.includes('siswa')) {
+        startAutomaticTracking();
+    } else {
+        trackingStatus.value = 'Error: Hanya untuk siswa';
+        trackingColor.value = 'text-red-500';
+    }
+});
+
+
 onUnmounted(() => {
     if (trackingInterval.value) {
         clearInterval(trackingInterval.value);
+    }
+    if (timeInterval.value) {
+        clearInterval(timeInterval.value);
     }
 });
 </script>
@@ -138,18 +155,18 @@ onUnmounted(() => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-                <div v-if="flash?.success" class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-lg flex items-center shadow-md" role="alert">
+                <div v-if="flash?.success" class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-lg flex items-center shadow-md dark:bg-gray-900 dark:border-green-600 dark:text-green-300" role="alert">
                     <CheckCircleIcon class="h-6 w-6 mr-3"/>
                     <span class="font-medium">{{ flash.success }}</span>
                 </div>
-                <div v-if="flash?.info" class="mb-6 bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-lg flex items-center shadow-md" role="alert">
+                <div v-if="flash?.info" class="mb-6 bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-lg flex items-center shadow-md dark:bg-gray-900 dark:border-blue-600 dark:text-blue-300" role="alert">
                     <InformationCircleIcon class="h-6 w-6 mr-3"/>
                     <span class="font-medium">{{ flash.info }}</span>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 md:p-8 text-gray-900">
-                        <h3 class="text-2xl font-bold mb-1 dark:text-white">Jadwal Pelajaran Hari Ini</h3>
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6 md:p-8">
+                        <h3 class="text-2xl font-bold mb-1 text-gray-900 dark:text-gray-100">Jadwal Pelajaran Hari Ini</h3>
                         <p class="text-gray-600 dark:text-gray-400 mb-6">Kelas: {{ namaKelas }}</p>
 
                         <div v-if="jadwalHariIni.length > 0" class="space-y-4">
@@ -162,19 +179,24 @@ onUnmounted(() => {
                                     <p class="font-bold text-lg text-teal-700 dark:text-teal-300">{{ jadwal.mata_pelajaran }}</p>
                                     <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
                                         <ClockIcon class="w-4 h-4 mr-1.5" />
-                                        <span>{{ jadwal.jam_mulai.slice(0, 5) }} - {{ jadwal.jam_selesai.slice(0, 5) }}</span>
+                                        <span>{{ jadwal.jam_mulai }} - {{ jadwal.jam_selesai }}</span>
                                     </div>
                                     <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
                                         <UserIcon class="w-4 h-4 mr-1.5" />
                                         <span>{{ jadwal.guru?.name || 'Guru tidak ditentukan' }}</span>
                                     </div>
                                 </div>
-                                <Link
-                                    :href="route('absen.create', jadwal.id)"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700"
-                                >
-                                    Absen Sekarang
-                                </Link>
+                                <!-- [CHANGED] Tombol Absen Dihilangkan, hanya menampilkan status -->
+                                <div class="w-full sm:w-auto flex flex-col sm:items-end gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getJadwalStatus(jadwal).classStyle">
+                                            {{ getJadwalStatus(jadwal).classState }}
+                                        </span>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getJadwalStatus(jadwal).attendanceStyle">
+                                            {{ getJadwalStatus(jadwal).attendanceState }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

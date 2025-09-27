@@ -41,6 +41,9 @@ class DashboardController extends Controller
             }
         }
 
+        // Set locale Carbon ke Bahasa Indonesia untuk konsistensi nama hari
+        Carbon::setLocale('id_ID');
+
         return match ($userRole) {
             'it', 'admin' => $this->renderItAdminDashboard(),
             'guru'        => $this->renderGuruDashboard($user),
@@ -56,13 +59,13 @@ class DashboardController extends Controller
     private function renderItAdminDashboard(): Response
     {
         $stats = [
-            'total_pengguna'    => User::count(),
-            'total_siswa'       => User::role('siswa')->count(),
-            'total_guru_bk'     => User::role(['guru', 'bk'])->count(),
-            'total_jurusan'     => Jurusan::count(),
-            'total_kelas'       => Kelas::count(),
+            'total_pengguna'     => User::count(),
+            'total_siswa'        => User::role('siswa')->count(),
+            'total_guru_bk'      => User::role(['guru', 'bk'])->count(),
+            'total_jurusan'      => Jurusan::count(),
+            'total_kelas'        => Kelas::count(),
             'total_jadwal_rutin' => Jadwal::where('tipe', 'pelajaran')->count(),
-            'total_zona_aktif'  => Zona::count(),
+            'total_zona_aktif'   => Zona::count(),
         ];
 
         return Inertia::render('Dashboard/IT', [
@@ -82,24 +85,28 @@ class DashboardController extends Controller
             ->whereDate('tanggal', $today)
             ->first();
 
-        $guruMataPelajaran = $user->subject_taught;
-
-        $jadwalMengajarHariIni = Jadwal::where('guru_id', $user->id)
+        $jadwalQuery = Jadwal::where('guru_id', $user->id)
             ->where(function ($query) use ($today, $dayOfWeek) {
-                $query->where('hari', $dayOfWeek)->orWhere('tanggal', $today);
+                $query->where('hari', $dayOfWeek)
+                      ->orWhere('tanggal', $today);
             })
-            ->when($guruMataPelajaran, function ($query, $subject) {
-    $query->whereHas('mataPelajaran', function ($q) use ($subject) {
-        $q->where('nama', $subject);
-    });
-})
-
-            ->with('kelas:id,nama_kelas')
+            ->with(['kelas:id,nama_kelas', 'mataPelajaran:id,nama'])
             ->orderBy('jam_mulai')
             ->get();
 
+        $jadwalIdsHariIni = $jadwalQuery->pluck('id')->toArray();
+
+        $jadwalMengajarHariIni = $jadwalQuery->map(function ($jadwal) {
+            return [
+                'id' => $jadwal->id,
+                'jam_mulai' => $jadwal->jam_mulai->format('H:i'),
+                'jam_selesai' => $jadwal->jam_selesai->format('H:i'),
+                'kelas' => $jadwal->kelas,
+                'mata_pelajaran' => optional($jadwal->mataPelajaran)->nama,
+            ];
+        });
+
         $rekapSiswa = ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alfa' => 0];
-        $jadwalIdsHariIni = $jadwalMengajarHariIni->pluck('id')->toArray();
 
         if (!empty($jadwalIdsHariIni)) {
             $absensiSiswaRekap = AbsensiSiswa::whereIn('jadwal_id', $jadwalIdsHariIni)
@@ -157,23 +164,43 @@ class DashboardController extends Controller
         $user->loadMissing('kelas.jurusan');
         $kelasSiswa = $user->kelas->first();
         $jadwalHariIni = collect();
+        $absensiHariIni = collect(); // Default collection kosong
 
         if ($kelasSiswa) {
             $today = Carbon::today()->toDateString();
             $dayOfWeek = Carbon::today()->isoFormat('dddd');
-            $jadwalHariIni = Jadwal::where('kelas_id', $kelasSiswa->id)
+
+            $jadwalQuery = Jadwal::where('kelas_id', $kelasSiswa->id)
                 ->where(function ($query) use ($today, $dayOfWeek) {
-                    $query->where('hari', $dayOfWeek)->orWhere('tanggal', $today);
+                    $query->where('hari', $dayOfWeek)
+                          ->orWhere('tanggal', 'like', $today);
                 })
-                ->with('guru:id,name')
+                ->with(['guru:id,name', 'mataPelajaran:id,nama'])
                 ->orderBy('jam_mulai', 'asc')
                 ->get();
+            
+            // [NEW] Mengambil data absensi siswa untuk jadwal hari ini
+            $jadwalIds = $jadwalQuery->pluck('id');
+            $absensiHariIni = AbsensiSiswa::where('user_id', $user->id)
+                ->whereIn('jadwal_id', $jadwalIds)
+                ->whereDate('waktu_absensi', $today)
+                ->pluck('jadwal_id'); // Hanya ambil ID jadwal yang sudah diabsen
+
+            $jadwalHariIni = $jadwalQuery->map(function ($jadwal) {
+                return [
+                    'id' => $jadwal->id,
+                    'jam_mulai' => $jadwal->jam_mulai->format('H:i'),
+                    'jam_selesai' => $jadwal->jam_selesai->format('H:i'),
+                    'guru' => $jadwal->guru,
+                    'mata_pelajaran' => optional($jadwal->mataPelajaran)->nama,
+                ];
+            });
         }
 
         return Inertia::render('Dashboard/Siswa', [
             'jadwalHariIni' => $jadwalHariIni,
             'kelasSiswa' => $kelasSiswa,
+            'absensiHariIni' => $absensiHariIni, // Kirim data absensi ke frontend
         ]);
     }
 }
-

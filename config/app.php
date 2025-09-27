@@ -111,7 +111,7 @@ return [
         App\Providers\AppServiceProvider::class,
         // App\Providers\AuthServiceProvider::class, // <-- Tetap nonaktif
         App\Providers\RouteServiceProvider::class,
-        App\Providers\TelescopeServiceProvider::class,
+        // App\Providers\TelescopeServiceProvider::class,
 
     ],
 
